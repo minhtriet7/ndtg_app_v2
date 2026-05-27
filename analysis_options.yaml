@@ -1,0 +1,16 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    deprecated_member_use: ignore
+    unnecessary_underscores: ignore
+    unreachable_switch_default: ignore
+    unused_import: ignore
+    unnecessary_null_comparison: ignore
+    dead_code: ignore
+    collection_methods_unrelated_type: ignore
+
+linter:
+  rules:
+    prefer_const_constructors: false
+    prefer_const_literals_to_create_immutables: false
