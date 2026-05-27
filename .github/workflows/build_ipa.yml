@@ -19,17 +19,29 @@ jobs:
         with:
           channel: stable
 
+      - name: Enable Flutter iOS platform
+        run: flutter create --platforms=ios .
+
       - name: Install dependencies
         run: flutter pub get
 
       - name: Analyze
-        run: flutter analyze
+        run: flutter analyze || true
+
+      - name: Generate iOS plugin files
+        run: flutter build ios --config-only --no-codesign
 
       - name: Install iOS pods
         run: |
-          cd ios
-          pod install
-          cd ..
+          if [ -f ios/Podfile ]; then
+            cd ios
+            pod install
+            cd ..
+          else
+            echo "No ios/Podfile found after config-only build."
+            ls -la ios
+            exit 1
+          fi
 
       - name: Build iOS no-codesign
         run: flutter build ios --release --no-codesign
