@@ -4,9 +4,9 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/utils/money_formatter.dart';
+import '../../../routes/route_names.dart';
 import '../../main/controllers/main_tab_controller.dart';
 import '../controllers/home_controller.dart';
-import '../../../routes/route_names.dart';
 
 class TokenBalanceCard extends StatelessWidget {
   const TokenBalanceCard({super.key});
@@ -19,16 +19,12 @@ class TokenBalanceCard extends StatelessWidget {
     final successRate = controller.stats.successRate;
 
     return Container(
-      padding: const EdgeInsets.all(AppSizes.lg),
+      padding: const EdgeInsets.all(AppSizes.xl),
       decoration: BoxDecoration(
         gradient: AppColors.tealGradient,
-        borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXxl),
         boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryTeal.withOpacity(0.28),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
+          BoxShadow(color: AppColors.primaryTeal.withOpacity(0.26), blurRadius: 28, offset: const Offset(0, 14)),
         ],
       ),
       child: Column(
@@ -38,37 +34,18 @@ class TokenBalanceCard extends StatelessWidget {
             children: [
               const Expanded(
                 child: Text(
-                  'Available Token Balance',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.2,
-                  ),
+                  'Token Balance',
+                  style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 0.2),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.18),
+                  color: Colors.white.withOpacity(0.16),
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(color: Colors.white.withOpacity(0.24)),
                 ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.auto_awesome_rounded, color: Colors.amber, size: 14),
-                    SizedBox(width: 5),
-                    Text(
-                      'AI Pipeline',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
+                child: const Text('Multi-Agent AI', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900)),
               ),
             ],
           ),
@@ -78,25 +55,12 @@ class TokenBalanceCard extends StatelessWidget {
             children: [
               Text(
                 MoneyFormatter.formatToken(balance),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 44,
-                  fontWeight: FontWeight.w900,
-                  height: 0.95,
-                  letterSpacing: -1.2,
-                ),
+                style: const TextStyle(color: Colors.white, fontSize: 46, fontWeight: FontWeight.w900, height: 0.95, letterSpacing: -1.4),
               ),
               const SizedBox(width: 8),
               const Padding(
                 padding: EdgeInsets.only(bottom: 5),
-                child: Text(
-                  'tokens',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+                child: Text('tokens', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900)),
               ),
             ],
           ),
@@ -112,51 +76,54 @@ class TokenBalanceCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => Navigator.of(context).pushNamed(RouteNames.pricing),
-                  icon: const Icon(
-                    Icons.add_shopping_cart_rounded,
-                    color: AppColors.primaryDarkTeal,
-                    size: 18,
-                  ),
-                  label: const Text(
-                    'Top Up',
-                    style: TextStyle(
-                      color: AppColors.primaryDarkTeal,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                    ),
-                  ),
+                child: _GlassButton(
+                  text: 'Top Up',
+                  foreground: AppColors.primaryDarkTeal,
+                  background: Colors.white,
+                  onTap: () => Navigator.of(context).pushNamed(RouteNames.pricing),
                 ),
               ),
               const SizedBox(width: AppSizes.md),
               Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => context.read<MainTabController>().goHistory(),
-                  icon: const Icon(Icons.history_rounded, color: Colors.white, size: 18),
-                  label: const Text(
-                    'History',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.white.withOpacity(0.55)),
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                    ),
-                  ),
+                child: _GlassButton(
+                  text: 'History',
+                  foreground: Colors.white,
+                  background: Colors.white.withOpacity(0.08),
+                  borderColor: Colors.white.withOpacity(0.46),
+                  onTap: () => context.read<MainTabController>().goHistory(),
                 ),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _GlassButton extends StatelessWidget {
+  final String text;
+  final Color foreground;
+  final Color background;
+  final Color? borderColor;
+  final VoidCallback onTap;
+
+  const _GlassButton({required this.text, required this.foreground, required this.background, this.borderColor, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+      child: Container(
+        height: 46,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+          border: borderColor == null ? null : Border.all(color: borderColor!),
+        ),
+        child: Text(text, style: TextStyle(color: foreground, fontWeight: FontWeight.w900)),
       ),
     );
   }

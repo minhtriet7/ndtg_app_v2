@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/widgets/app_badge.dart';
+import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_skeleton.dart';
@@ -24,6 +26,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<HistoryController>().fetchHistory();
     });
   }
@@ -35,12 +38,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scan History'),
+        title: const Text('History'),
         actions: [
-          IconButton(
-            tooltip: 'Filter',
-            icon: Icon(_showFilters ? Icons.filter_alt : Icons.filter_alt_outlined),
-            onPressed: () => setState(() => _showFilters = !_showFilters),
+          Padding(
+            padding: const EdgeInsets.only(right: AppSizes.sm),
+            child: IconButton.filledTonal(
+              tooltip: 'Filter',
+              onPressed: () => setState(() => _showFilters = !_showFilters),
+              icon: Icon(_showFilters ? Icons.tune_rounded : Icons.tune_outlined),
+            ),
           ),
         ],
       ),
@@ -51,38 +57,57 @@ class _HistoryScreenState extends State<HistoryScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(AppSizes.lg, AppSizes.md, AppSizes.lg, AppSizes.sm),
+              padding: const EdgeInsets.fromLTRB(AppSizes.lg, AppSizes.md, AppSizes.lg, 0),
               sliver: SliverToBoxAdapter(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Your recognition activity',
-                      style: TextStyle(
-                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                        fontSize: 26,
-                        fontWeight: FontWeight.w900,
-                      ),
+                    _HistoryHero(
+                      total: controller.historyList.length,
+                      isDark: isDark,
+                      onToggleFilter: () => setState(() => _showFilters = !_showFilters),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Review previous AI banknote scans, confidence status, and detailed agent outputs.',
-                      style: TextStyle(color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight, fontSize: 14, height: 1.4),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      child: _showFilters
+                          ? Padding(
+                        key: const ValueKey('filters'),
+                        padding: const EdgeInsets.only(top: AppSizes.lg),
+                        child: HistoryFilterBar(
+                          searchQuery: controller.searchQuery,
+                          statusFilter: controller.statusFilter,
+                          currencyFilter: controller.currencyFilter,
+                          currencies: controller.availableCurrencies,
+                          onSearchChanged: controller.updateSearch,
+                          onStatusChanged: controller.updateStatusFilter,
+                          onCurrencyChanged: controller.updateCurrencyFilter,
+                          onApply: controller.applyFilters,
+                          onReset: controller.clearFilters,
+                        ),
+                      )
+                          : const SizedBox.shrink(key: ValueKey('emptyFilters')),
                     ),
-                    if (_showFilters) ...[
-                      const SizedBox(height: AppSizes.lg),
-                      HistoryFilterBar(
-                        searchQuery: controller.searchQuery,
-                        statusFilter: controller.statusFilter,
-                        currencyFilter: controller.currencyFilter,
-                        currencies: controller.availableCurrencies,
-                        onSearchChanged: controller.updateSearch,
-                        onStatusChanged: controller.updateStatusFilter,
-                        onCurrencyChanged: controller.updateCurrencyFilter,
-                        onApply: controller.applyFilters,
-                        onReset: controller.clearFilters,
-                      ),
-                    ],
+                    const SizedBox(height: AppSizes.lg),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Recent recognition results',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.4,
+                            ),
+                          ),
+                        ),
+                        AppBadge(
+                          text: '${controller.historyList.length} scans',
+                          status: BadgeStatus.info,
+                          uppercase: false,
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: AppSizes.md),
                   ],
                 ),
@@ -94,25 +119,126 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 sliver: SliverList.separated(
                   itemCount: 6,
                   separatorBuilder: (_, __) => const SizedBox(height: AppSizes.md),
-                  itemBuilder: (_, __) => const LoadingSkeleton(height: 96, borderRadius: AppSizes.radiusLg),
+                  itemBuilder: (_, __) => const LoadingSkeleton(
+                    height: 112,
+                    borderRadius: AppSizes.radiusXl,
+                  ),
                 ),
               )
             else if (controller.error != null && controller.historyList.isEmpty)
-              SliverFillRemaining(hasScrollBody: false, child: ErrorState(message: controller.error!, onRetry: controller.fetchHistory))
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: ErrorState(message: controller.error!, onRetry: controller.fetchHistory),
+              )
             else if (controller.historyList.isEmpty)
                 const SliverFillRemaining(
                   hasScrollBody: false,
-                  child: EmptyState(title: 'No scans yet', message: 'Start by scanning a banknote. Your results will appear here.', icon: Icons.history_rounded),
+                  child: EmptyState(
+                    title: 'No scans yet',
+                    message: 'Start a scan and BanknoteAI will save the final result here.',
+                    icon: Icons.history_rounded,
+                  ),
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(AppSizes.lg, 0, AppSizes.lg, AppSizes.xxl),
+                  padding: const EdgeInsets.fromLTRB(AppSizes.lg, 0, AppSizes.lg, 112),
                   sliver: SliverList.separated(
                     itemCount: controller.historyList.length,
                     separatorBuilder: (_, __) => const SizedBox(height: AppSizes.md),
                     itemBuilder: (context, index) => HistoryItemCard(result: controller.historyList[index]),
                   ),
                 ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HistoryHero extends StatelessWidget {
+  final int total;
+  final bool isDark;
+  final VoidCallback onToggleFilter;
+
+  const _HistoryHero({
+    required this.total,
+    required this.isDark,
+    required this.onToggleFilter,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: EdgeInsets.zero,
+      hasBorder: false,
+      child: Container(
+        padding: const EdgeInsets.all(AppSizes.lg),
+        decoration: BoxDecoration(
+          gradient: AppColors.tealGradient,
+          borderRadius: BorderRadius.circular(AppSizes.radiusXxl),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryTeal.withOpacity(isDark ? 0.10 : 0.22),
+              blurRadius: 30,
+              offset: const Offset(0, 16),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+                    border: Border.all(color: Colors.white.withOpacity(0.22)),
+                  ),
+                  child: const Icon(Icons.receipt_long_rounded, color: Colors.white),
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: onToggleFilter,
+                  icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 18),
+                  label: const Text(
+                    'Filters',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSizes.lg),
+            const Text(
+              'Recognition History',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 27,
+                height: 1.05,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.8,
+              ),
+            ),
+            const SizedBox(height: AppSizes.sm),
+            const Text(
+              'Review saved outputs, confidence, status, and complete multi-agent details.',
+              style: TextStyle(color: Colors.white70, height: 1.45, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: AppSizes.lg),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: AppSizes.sm),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.14),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: Colors.white.withOpacity(0.20)),
+              ),
+              child: Text(
+                '$total total scans',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+              ),
+            ),
           ],
         ),
       ),

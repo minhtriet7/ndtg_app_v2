@@ -20,8 +20,8 @@ class AppConfig {
   }
 
   static const int connectTimeoutMs = 15000;
-  static const int receiveTimeoutMs = 90000;
-  static const int sendTimeoutMs = 30000;
+  static const int receiveTimeoutMs = 300000; // Tăng lên 5 phút (300,000 ms)
+  static const int sendTimeoutMs = 60000;     // Tăng lên 1 phút (60,000 ms) để tải ảnh
 
   static const int maxImageSizeMb = 5;
   static const int pollingIntervalMs = 2500;

@@ -17,14 +17,14 @@ class AppSizes {
   static const double paddingLg = lg;
   static const double paddingXl = xl;
 
-  static const double cardPadding = lg;
+  static const double cardPadding = 20;
 
-  static const double radiusXs = 4;
-  static const double radiusSm = 8;
-  static const double radiusMd = 12;
-  static const double radiusLg = 16;
-  static const double radiusXl = 20;
-  static const double radiusXxl = 24;
+  static const double radiusXs = 6;
+  static const double radiusSm = 10;
+  static const double radiusMd = 16;
+  static const double radiusLg = 20;
+  static const double radiusXl = 24;
+  static const double radiusXxl = 28;
 
   static const double iconXs = 14;
   static const double iconSm = 18;
@@ -32,10 +32,10 @@ class AppSizes {
   static const double iconLg = 28;
   static const double iconXl = 36;
 
-  static const double buttonHeight = 52;
-  static const double defaultButtonHeight = 52;
-  static const double inputFieldHeight = 52;
-  static const double bottomNavHeight = 76;
+  static const double buttonHeight = 54;
+  static const double defaultButtonHeight = 54;
+  static const double inputFieldHeight = 54;
+  static const double bottomNavHeight = 82;
 
   static const double maxContentWidth = 520;
 }

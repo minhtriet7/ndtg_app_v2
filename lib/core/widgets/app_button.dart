@@ -4,23 +4,14 @@ import '../constants/app_colors.dart';
 import '../constants/app_sizes.dart';
 
 enum ButtonType { primary, secondary, outline, ghost, text, danger }
-
-// Compatibility enum for files that call AppButton(type: AppButtonType.outline)
 enum AppButtonType { primary, secondary, outline, ghost, text, danger }
-
-// Compatibility enum for files that call AppButton(variant: AppButtonVariant.outline)
 enum AppButtonVariant { primary, secondary, outline, ghost, text, danger }
 
 class AppButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
-
-  /// Accepts ButtonType, AppButtonType, or AppButtonVariant.
   final Object? type;
-
-  /// Accepts ButtonType, AppButtonType, or AppButtonVariant.
   final Object? variant;
-
   final bool isLoading;
   final IconData? icon;
   final IconData? trailingIcon;
@@ -43,95 +34,51 @@ class AppButton extends StatelessWidget {
   });
 
   ButtonType get _resolvedType {
-    final Object? raw = variant ?? type;
-
+    final raw = variant ?? type;
     if (raw is ButtonType) return raw;
-
-    if (raw is AppButtonType) {
-      switch (raw) {
-        case AppButtonType.primary:
-          return ButtonType.primary;
-        case AppButtonType.secondary:
-          return ButtonType.secondary;
-        case AppButtonType.outline:
-          return ButtonType.outline;
-        case AppButtonType.ghost:
-          return ButtonType.ghost;
-        case AppButtonType.text:
-          return ButtonType.text;
-        case AppButtonType.danger:
-          return ButtonType.danger;
-      }
-    }
-
-    if (raw is AppButtonVariant) {
-      switch (raw) {
-        case AppButtonVariant.primary:
-          return ButtonType.primary;
-        case AppButtonVariant.secondary:
-          return ButtonType.secondary;
-        case AppButtonVariant.outline:
-          return ButtonType.outline;
-        case AppButtonVariant.ghost:
-          return ButtonType.ghost;
-        case AppButtonVariant.text:
-          return ButtonType.text;
-        case AppButtonVariant.danger:
-          return ButtonType.danger;
-      }
-    }
-
+    if (raw is AppButtonType) return ButtonType.values[raw.index];
+    if (raw is AppButtonVariant) return ButtonType.values[raw.index];
     return ButtonType.primary;
   }
 
   @override
   Widget build(BuildContext context) {
     final resolvedType = _resolvedType;
-    final bool disabled = onPressed == null || isLoading;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final disabled = onPressed == null || isLoading;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final Color foreground = switch (resolvedType) {
+    final foreground = switch (resolvedType) {
       ButtonType.primary => Colors.white,
       ButtonType.danger => Colors.white,
       ButtonType.secondary => isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-      ButtonType.outline => AppColors.primaryTeal,
-      ButtonType.ghost => AppColors.primaryTeal,
-      ButtonType.text => AppColors.primaryTeal,
+      ButtonType.outline => isDark ? AppColors.primaryLightTeal : AppColors.primaryTeal,
+      ButtonType.ghost => isDark ? AppColors.primaryLightTeal : AppColors.primaryTeal,
+      ButtonType.text => isDark ? AppColors.primaryLightTeal : AppColors.primaryTeal,
     };
 
-    final Color background = switch (resolvedType) {
+    final background = switch (resolvedType) {
       ButtonType.primary => AppColors.primaryTeal,
       ButtonType.danger => AppColors.danger,
-      ButtonType.secondary => isDark ? AppColors.borderDark : AppColors.borderLight,
+      ButtonType.secondary => isDark ? AppColors.cardDark : Colors.white,
       ButtonType.outline => Colors.transparent,
-      ButtonType.ghost => AppColors.primaryTeal.withOpacity(0.08),
+      ButtonType.ghost => (isDark ? AppColors.primaryLightTeal : AppColors.primaryTeal).withOpacity(0.10),
       ButtonType.text => Colors.transparent,
     };
 
-    final BorderSide borderSide = switch (resolvedType) {
-      ButtonType.outline => const BorderSide(
-        color: AppColors.primaryTeal,
-        width: 1.3,
-      ),
+    final borderSide = switch (resolvedType) {
+      ButtonType.outline || ButtonType.secondary => BorderSide(color: isDark ? AppColors.borderDark : AppColors.borderLight, width: 1.2),
       _ => BorderSide.none,
     };
 
-    final Widget content = Row(
+    final content = Row(
       mainAxisSize: isFullWidth ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (isLoading) ...[
-          SizedBox(
-            width: 19,
-            height: 19,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.2,
-              color: foreground,
-            ),
-          ),
+          SizedBox(width: 19, height: 19, child: CircularProgressIndicator(strokeWidth: 2.2, color: foreground)),
           const SizedBox(width: AppSizes.sm),
         ] else if (icon != null) ...[
-          Icon(icon, size: 19),
+          Icon(icon, size: 18),
           const SizedBox(width: AppSizes.sm),
         ],
         Flexible(
@@ -139,11 +86,7 @@ class AppButton extends StatelessWidget {
             text,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.1,
-            ),
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: -0.1),
           ),
         ),
         if (!isLoading && trailingIcon != null) ...[
@@ -153,36 +96,32 @@ class AppButton extends StatelessWidget {
       ],
     );
 
-    final Widget button = ElevatedButton(
-      onPressed: disabled ? null : onPressed,
-      style: ElevatedButton.styleFrom(
-        elevation: 0,
-        shadowColor: Colors.transparent,
-        backgroundColor: background,
-        disabledBackgroundColor: background.withOpacity(0.55),
-        foregroundColor: foreground,
-        disabledForegroundColor: foreground.withOpacity(0.55),
-        minimumSize: Size(
-          isFullWidth ? double.infinity : 0,
-          minHeight ?? AppSizes.defaultButtonHeight,
-        ),
-        padding: padding ??
-            const EdgeInsets.symmetric(
-              horizontal: AppSizes.lg,
-              vertical: AppSizes.sm,
-            ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-          side: borderSide,
-        ),
+    final button = AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      decoration: BoxDecoration(
+        gradient: resolvedType == ButtonType.primary && !disabled ? AppColors.tealGradient : null,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        boxShadow: resolvedType == ButtonType.primary && !disabled
+            ? [BoxShadow(color: AppColors.primaryTeal.withOpacity(0.24), blurRadius: 18, offset: const Offset(0, 10))]
+            : [],
       ),
-      child: content,
+      child: ElevatedButton(
+        onPressed: disabled ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          backgroundColor: resolvedType == ButtonType.primary ? Colors.transparent : background,
+          disabledBackgroundColor: background.withOpacity(0.55),
+          foregroundColor: foreground,
+          disabledForegroundColor: foreground.withOpacity(0.55),
+          minimumSize: Size(isFullWidth ? double.infinity : 0, minHeight ?? AppSizes.defaultButtonHeight),
+          padding: padding ?? const EdgeInsets.symmetric(horizontal: AppSizes.lg, vertical: AppSizes.sm),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusMd), side: borderSide),
+        ),
+        child: content,
+      ),
     );
 
-    if (isFullWidth) {
-      return SizedBox(width: double.infinity, child: button);
-    }
-
-    return button;
+    return isFullWidth ? SizedBox(width: double.infinity, child: button) : button;
   }
 }

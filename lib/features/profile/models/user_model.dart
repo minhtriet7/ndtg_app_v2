@@ -25,7 +25,10 @@ class UserModel {
     required this.updatedAt,
   });
 
-  bool get isAdmin => role.toLowerCase() == 'admin';
+  bool get isAdmin {
+    final normalized = role.toLowerCase().trim();
+    return normalized == 'admin' || normalized == 'superadmin';
+  }
 
   String get initials {
     final cleanName = fullName.trim();

@@ -16,14 +16,12 @@ import '../widgets/result_summary_card.dart';
 class ResultDetailScreen extends StatelessWidget {
   final BanknoteResultModel result;
 
-  const ResultDetailScreen({
-    super.key,
-    required this.result,
-  });
+  const ResultDetailScreen({super.key, required this.result});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final rawJson = const JsonEncoder.withIndent('  ').convert(result.rawJson);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Result Details')),
@@ -36,12 +34,7 @@ class ResultDetailScreen extends StatelessWidget {
               if (result.imageUrl.isNotEmpty)
                 AppCard(
                   padding: EdgeInsets.zero,
-                  child: NetworkImageView(
-                    imageUrl: result.imageUrl,
-                    height: 260,
-                    fit: BoxFit.contain,
-                    borderRadius: AppSizes.radiusLg,
-                  ),
+                  child: NetworkImageView(imageUrl: result.imageUrl, height: 260, fit: BoxFit.contain, borderRadius: AppSizes.radiusLg),
                 ),
               if (result.imageUrl.isNotEmpty) const SizedBox(height: AppSizes.lg),
               ResultSummaryCard(result: result),
@@ -50,88 +43,45 @@ class ResultDetailScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Metadata',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-                    ),
+                    const Text('Metadata', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
                     const SizedBox(height: AppSizes.md),
                     _DetailRow(label: 'Result ID', value: result.id.isEmpty ? 'N/A' : result.id),
                     _DetailRow(label: 'Status', value: result.status),
-                    _DetailRow(
-                      label: 'Created At',
-                      value: DateFormatter.formatDateTime(result.createdAt),
-                    ),
+                    _DetailRow(label: 'Created At', value: DateFormatter.formatDateTime(result.createdAt)),
                     _DetailRow(label: 'Decision Reason', value: result.finalResult.decisionReason),
                   ],
                 ),
               ),
               const SizedBox(height: AppSizes.lg),
-              Text(
-                'Agent Outputs',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                ),
-              ),
+              Text('Agent Outputs', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight)),
               const SizedBox(height: AppSizes.sm),
-              ...result.agentResults.map(
-                    (agent) => Padding(
-                  padding: const EdgeInsets.only(bottom: AppSizes.sm),
-                  child: AgentStatusCard(agent: agent),
-                ),
-              ),
+              ...result.agentResults.map((agent) => Padding(padding: const EdgeInsets.only(bottom: AppSizes.sm), child: AgentStatusCard(agent: agent))),
               const SizedBox(height: AppSizes.lg),
               AppCard(
-                backgroundColor: isDark ? AppColors.bgDark : const Color(0xFF0F172A),
+                backgroundColor: AppColors.codeBg,
+                hasBorder: false,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Expanded(
-                          child: Text(
-                            'Raw JSON',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                        TextButton.icon(
+                        const Expanded(child: Text('Raw JSON', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900))),
+                        TextButton(
                           onPressed: () {
-                            Clipboard.setData(
-                              ClipboardData(text: const JsonEncoder.withIndent('  ').convert(result.rawJson)),
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Raw JSON copied.')),
-                            );
+                            Clipboard.setData(ClipboardData(text: rawJson));
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Raw JSON copied.')));
                           },
-                          icon: const Icon(Icons.copy_rounded, size: 16),
-                          label: const Text('Copy'),
+                          child: const Text('Copy'),
                         ),
                       ],
                     ),
                     const SizedBox(height: AppSizes.sm),
-                    Text(
-                      const JsonEncoder.withIndent('  ').convert(result.rawJson),
-                      style: const TextStyle(
-                        color: Color(0xFF5EEAD4),
-                        fontSize: 12,
-                        height: 1.4,
-                        fontFamily: 'monospace',
-                      ),
-                    ),
+                    Text(rawJson, style: const TextStyle(color: AppColors.codeText, fontSize: 12, height: 1.45, fontFamily: 'JetBrains Mono')),
                   ],
                 ),
               ),
               const SizedBox(height: AppSizes.xl),
-              AppButton(
-                text: 'Close',
-                icon: Icons.check_rounded,
-                onPressed: () => Navigator.of(context).pop(),
-              ),
+              AppButton(text: 'Close', onPressed: () => Navigator.of(context).pop()),
             ],
           ),
         ),
@@ -144,15 +94,11 @@ class _DetailRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _DetailRow({
-    required this.label,
-    required this.value,
-  });
+  const _DetailRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSizes.sm),
       child: Row(
@@ -160,23 +106,9 @@ class _DetailRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 118,
-            child: Text(
-              label,
-              style: TextStyle(
-                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            child: Text(label, style: TextStyle(color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight, fontWeight: FontWeight.w700)),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
+          Expanded(child: Text(value, style: TextStyle(color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight, fontWeight: FontWeight.w800))),
         ],
       ),
     );

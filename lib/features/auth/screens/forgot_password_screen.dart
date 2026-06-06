@@ -29,9 +29,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
-          'Password recovery is not enabled by the backend yet. Please contact your administrator.',
-        ),
+        content: Text('Password recovery is not enabled by the backend yet. Please contact your administrator.'),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -45,64 +43,76 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       appBar: AppBar(title: const Text('Password recovery')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSizes.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  gradient: AppColors.tealGradient,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: const Icon(
-                  Icons.lock_reset_rounded,
-                  color: Colors.white,
-                  size: 34,
-                ),
-              ),
-              const SizedBox(height: AppSizes.lg),
-              Text(
-                'Recover your account',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Enter your email address. The app will use the recovery endpoint when it is enabled on the backend.',
-                style: TextStyle(
-                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: AppSizes.xl),
-              AppCard(
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      AppTextField(
-                        label: 'Email address',
-                        hint: 'you@example.com',
-                        controller: _emailController,
-                        prefixIcon: Icons.email_outlined,
-                        keyboardType: TextInputType.emailAddress,
-                        validator: Validators.validateEmail,
+          padding: const EdgeInsets.fromLTRB(AppSizes.lg, AppSizes.lg, AppSizes.lg, AppSizes.xxl),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: AppSizes.maxContentWidth),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  AppCard(
+                    padding: EdgeInsets.zero,
+                    hasBorder: false,
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSizes.lg),
+                      decoration: BoxDecoration(
+                        gradient: AppColors.tealGradient,
+                        borderRadius: BorderRadius.circular(AppSizes.radiusXxl),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primaryTeal.withOpacity(isDark ? 0.10 : 0.22),
+                            blurRadius: 30,
+                            offset: const Offset(0, 16),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: AppSizes.lg),
-                      AppButton(
-                        text: 'Continue',
-                        icon: Icons.arrow_forward_rounded,
-                        onPressed: _showNotConfiguredMessage,
+                      child: const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.lock_reset_rounded, color: Colors.white, size: 38),
+                          SizedBox(height: AppSizes.md),
+                          Text(
+                            'Recover your account',
+                            style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+                          ),
+                          SizedBox(height: AppSizes.sm),
+                          Text(
+                            'Enter your email address. Recovery will use the backend endpoint when enabled.',
+                            style: TextStyle(color: Colors.white70, height: 1.45, fontWeight: FontWeight.w600),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: AppSizes.lg),
+                  AppCard(
+                    padding: const EdgeInsets.all(AppSizes.lg),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          AppTextField(
+                            label: 'Email address',
+                            hint: 'you@example.com',
+                            controller: _emailController,
+                            prefixIcon: Icons.email_outlined,
+                            keyboardType: TextInputType.emailAddress,
+                            validator: Validators.validateEmail,
+                          ),
+                          const SizedBox(height: AppSizes.lg),
+                          AppButton(
+                            text: 'Continue',
+                            icon: Icons.arrow_forward_rounded,
+                            onPressed: _showNotConfiguredMessage,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

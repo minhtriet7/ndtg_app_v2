@@ -38,70 +38,170 @@ class HomeStatsModel {
   }
 
   factory HomeStatsModel.fromJson(Map<String, dynamic> json) {
-    final total = _asInt(ResponseParser.getValue(
-      json,
-      ['total_scans', 'scan_count', 'scans', 'stats.total_scans'],
-      defaultValue: 0,
-    ));
+    final total = _asInt(
+      ResponseParser.getValue(
+        json,
+        [
+          'total_scans',
+          'scan_count',
+          'scans',
+          'totalScans',
+          'stats.total_scans',
+          'stats.scan_count',
+          'stats.scans',
+        ],
+        defaultValue: 0,
+      ),
+    );
 
-    final completed = _asInt(ResponseParser.getValue(
-      json,
-      ['completed_scans', 'stats.completed_scans'],
-      defaultValue: 0,
-    ));
+    final completed = _asInt(
+      ResponseParser.getValue(
+        json,
+        [
+          'completed',
+          'completed_scans',
+          'success',
+          'success_scans',
+          'successful_scans',
+          'completed_count',
+          'success_count',
+          'stats.completed',
+          'stats.completed_scans',
+          'stats.success',
+          'stats.success_scans',
+          'recognitions.completed',
+        ],
+        defaultValue: 0,
+      ),
+    );
 
-    final failed = _asInt(ResponseParser.getValue(
+    final failed = _asInt(
+      ResponseParser.getValue(
+        json,
+        [
+          'failed',
+          'failed_scans',
+          'error_scans',
+          'needs_review',
+          'review_scans',
+          'stats.failed',
+          'stats.failed_scans',
+          'stats.needs_review',
+          'recognitions.failed',
+          'recognitions.needs_review',
+        ],
+        defaultValue: 0,
+      ),
+    );
+
+    final rawSuccessRate = ResponseParser.getValue(
       json,
-      ['failed_scans', 'stats.failed_scans'],
-      defaultValue: 0,
-    ));
+      [
+        'success_rate',
+        'successRate',
+        'completed_rate',
+        'stats.success_rate',
+        'stats.successRate',
+        'recognitions.success_rate',
+      ],
+      defaultValue: null,
+    );
+
+    final calculatedSuccessRate = total > 0 ? (completed / total) * 100 : 0.0;
+    final successRate = rawSuccessRate == null
+        ? calculatedSuccessRate
+        : _normalizeRate(_asDouble(rawSuccessRate));
 
     return HomeStatsModel(
       fullName: ResponseParser.getValue(
         json,
-        ['full_name', 'name', 'display_name', 'user.full_name', 'user.name'],
+        [
+          'full_name',
+          'fullName',
+          'name',
+          'display_name',
+          'displayName',
+          'user.full_name',
+          'user.fullName',
+          'user.name',
+        ],
         defaultValue: 'User',
       ).toString(),
       email: ResponseParser.getValue(
         json,
-        ['email', 'user.email'],
+        [
+          'email',
+          'user.email',
+        ],
         defaultValue: '',
       ).toString(),
       role: ResponseParser.getValue(
         json,
-        ['role', 'user.role'],
+        [
+          'role',
+          'user.role',
+        ],
         defaultValue: 'user',
       ).toString(),
-      tokenBalance: _asInt(ResponseParser.getValue(
-        json,
-        ['token_balance', 'tokens', 'user.token_balance', 'user.tokens'],
-        defaultValue: 0,
-      )),
+      tokenBalance: _asInt(
+        ResponseParser.getValue(
+          json,
+          [
+            'token_balance',
+            'tokenBalance',
+            'tokens',
+            'balance',
+            'user.token_balance',
+            'user.tokenBalance',
+            'user.tokens',
+          ],
+          defaultValue: 0,
+        ),
+      ),
       totalScans: total,
       completedScans: completed,
       failedScans: failed,
-      usedTokens: _asInt(ResponseParser.getValue(
-        json,
-        ['used_tokens', 'tokens_used', 'stats.used_tokens'],
-        defaultValue: 0,
-      )),
-      successRate: _asDouble(ResponseParser.getValue(
-        json,
-        ['success_rate', 'stats.success_rate'],
-        defaultValue: total > 0 ? (completed / total) * 100 : 0,
-      )),
+      usedTokens: _asInt(
+        ResponseParser.getValue(
+          json,
+          [
+            'used_tokens',
+            'tokens_used',
+            'system_tokens_charged',
+            'stats.used_tokens',
+            'stats.tokens_used',
+          ],
+          defaultValue: total,
+        ),
+      ),
+      successRate: successRate,
     );
   }
 
   static int _asInt(dynamic value) {
+    if (value == null) return 0;
     if (value is int) return value;
     if (value is double) return value.round();
-    return int.tryParse(value?.toString() ?? '') ?? 0;
+
+    final text = value.toString().trim();
+    if (text.isEmpty) return 0;
+
+    return int.tryParse(text) ?? double.tryParse(text)?.round() ?? 0;
   }
 
   static double _asDouble(dynamic value) {
+    if (value == null) return 0;
     if (value is double) return value;
     if (value is int) return value.toDouble();
-    return double.tryParse(value?.toString() ?? '') ?? 0;
+
+    final text = value.toString().trim().replaceAll('%', '');
+    if (text.isEmpty) return 0;
+
+    return double.tryParse(text) ?? 0;
+  }
+
+  static double _normalizeRate(double value) {
+    if (value <= 1 && value > 0) return value * 100;
+    return value;
   }
 }

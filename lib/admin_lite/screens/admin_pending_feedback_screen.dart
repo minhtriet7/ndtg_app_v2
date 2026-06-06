@@ -32,62 +32,24 @@ class _AdminPendingFeedbackScreenState extends State<AdminPendingFeedbackScreen>
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<AdminLiteController>();
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pending Feedback'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: controller.loadPendingFeedbacks,
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        color: AppColors.primaryTeal,
-        onRefresh: controller.loadPendingFeedbacks,
-        child: _buildBody(controller),
-      ),
+      appBar: AppBar(title: const Text('Pending Feedback'), actions: [IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: controller.loadPendingFeedbacks)]),
+      body: RefreshIndicator(color: AppColors.primaryTeal, onRefresh: controller.loadPendingFeedbacks, child: _buildBody(controller)),
     );
   }
 
   Widget _buildBody(AdminLiteController controller) {
     if (controller.isLoading && controller.pendingFeedbacks.isEmpty) {
-      return ListView.builder(
-        padding: const EdgeInsets.all(AppSizes.lg),
-        itemCount: 5,
-        itemBuilder: (_, __) => const Padding(
-          padding: EdgeInsets.only(bottom: AppSizes.md),
-          child: LoadingSkeleton(height: 155, borderRadius: AppSizes.radiusLg),
-        ),
-      );
+      return ListView.builder(padding: const EdgeInsets.all(AppSizes.lg), itemCount: 5, itemBuilder: (_, __) => const Padding(padding: EdgeInsets.only(bottom: AppSizes.md), child: LoadingSkeleton(height: 164, borderRadius: AppSizes.radiusXl)));
     }
-
-    if (controller.error != null && controller.pendingFeedbacks.isEmpty) {
-      return ErrorState(
-        message: controller.error!,
-        onRetry: controller.loadPendingFeedbacks,
-      );
-    }
-
-    if (controller.pendingFeedbacks.isEmpty) {
-      return const EmptyState(
-        title: 'No pending feedback',
-        message: 'There are no unresolved user reports right now.',
-        icon: Icons.mark_chat_read_outlined,
-      );
-    }
+    if (controller.error != null && controller.pendingFeedbacks.isEmpty) return ErrorState(message: controller.error!, onRetry: controller.loadPendingFeedbacks);
+    if (controller.pendingFeedbacks.isEmpty) return const EmptyState(title: 'No pending feedback', message: 'There are no unresolved user reports right now.', icon: Icons.mark_chat_read_outlined);
 
     return ListView.separated(
       padding: const EdgeInsets.all(AppSizes.lg),
       itemCount: controller.pendingFeedbacks.length,
       separatorBuilder: (_, __) => const SizedBox(height: AppSizes.md),
-      itemBuilder: (context, index) {
-        return _FeedbackCard(
-          feedback: controller.pendingFeedbacks[index],
-          controller: controller,
-        );
-      },
+      itemBuilder: (context, index) => _FeedbackCard(feedback: controller.pendingFeedbacks[index], controller: controller),
     );
   }
 }
@@ -95,95 +57,39 @@ class _AdminPendingFeedbackScreenState extends State<AdminPendingFeedbackScreen>
 class _FeedbackCard extends StatelessWidget {
   final AdminFeedbackModel feedback;
   final AdminLiteController controller;
-
-  const _FeedbackCard({
-    required this.feedback,
-    required this.controller,
-  });
+  const _FeedbackCard({required this.feedback, required this.controller});
 
   @override
   Widget build(BuildContext context) {
-    final priorityStatus = feedback.priority == 'high'
-        ? BadgeStatus.error
-        : feedback.priority == 'low'
-        ? BadgeStatus.neutral
-        : BadgeStatus.warning;
+    final priorityStatus = feedback.priority == 'high' ? BadgeStatus.error : feedback.priority == 'low' ? BadgeStatus.neutral : BadgeStatus.warning;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.feedback_outlined, color: AppColors.info),
-              const SizedBox(width: AppSizes.sm),
-              Expanded(
-                child: Text(
-                  feedback.userEmail,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
-                ),
-              ),
-              AppBadge(text: feedback.priority, status: priorityStatus),
-            ],
-          ),
-          const SizedBox(height: AppSizes.md),
-          Row(
-            children: [
-              AppBadge(text: feedback.type, status: BadgeStatus.info),
-              const SizedBox(width: AppSizes.sm),
-              Row(
-                children: List.generate(
-                  5,
-                      (index) => Icon(
-                    index < feedback.rating ? Icons.star_rounded : Icons.star_border_rounded,
-                    size: 16,
-                    color: Colors.amber,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSizes.md),
-          Text(
-            feedback.message.isEmpty ? 'No message content.' : feedback.message,
-            style: const TextStyle(fontSize: 14, height: 1.4),
-          ),
-          const SizedBox(height: AppSizes.md),
-          Text(
-            DateFormatter.formatDateTime(feedback.createdAt),
-            style: const TextStyle(fontSize: 12, color: AppColors.textMutedLight),
-          ),
-          const SizedBox(height: AppSizes.lg),
-          Row(
-            children: [
-              Expanded(
-                child: AppButton(
-                  text: 'High Priority',
-                  type: ButtonType.outline,
-                  onPressed: controller.isActionLoading
-                      ? null
-                      : () async {
-                    await controller.updateFeedbackPriority(feedback.id, 'high');
-                  },
-                ),
-              ),
-              const SizedBox(width: AppSizes.md),
-              Expanded(
-                child: AppButton(
-                  text: 'Resolve',
-                  icon: Icons.check_circle_outline,
-                  isLoading: controller.isActionLoading,
-                  onPressed: controller.isActionLoading
-                      ? null
-                      : () async {
-                    await controller.resolveFeedback(feedback.id);
-                  },
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(width: 44, height: 44, decoration: BoxDecoration(color: AppColors.info.withOpacity(0.12), borderRadius: BorderRadius.circular(AppSizes.radiusLg)), child: const Icon(Icons.feedback_outlined, color: AppColors.info)),
+          const SizedBox(width: AppSizes.md),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(feedback.userEmail, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight)),
+            const SizedBox(height: 3),
+            Text(DateFormatter.formatDateTime(feedback.createdAt), style: TextStyle(fontSize: 12, color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight)),
+          ])),
+          AppBadge(text: feedback.priority, status: priorityStatus, uppercase: false),
+        ]),
+        const SizedBox(height: AppSizes.md),
+        Wrap(spacing: AppSizes.sm, runSpacing: AppSizes.sm, crossAxisAlignment: WrapCrossAlignment.center, children: [
+          AppBadge(text: feedback.type, status: BadgeStatus.info, uppercase: false),
+          Row(mainAxisSize: MainAxisSize.min, children: List.generate(5, (index) => Icon(index < feedback.rating ? Icons.star_rounded : Icons.star_border_rounded, size: 16, color: AppColors.warning))),
+        ]),
+        const SizedBox(height: AppSizes.md),
+        Text(feedback.message.isEmpty ? 'No message content.' : feedback.message, style: TextStyle(fontSize: 14, height: 1.45, fontWeight: FontWeight.w600, color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight)),
+        const SizedBox(height: AppSizes.lg),
+        Row(children: [
+          Expanded(child: AppButton(text: 'High Priority', type: ButtonType.outline, onPressed: controller.isActionLoading ? null : () async => controller.updateFeedbackPriority(feedback.id, 'high'))),
+          const SizedBox(width: AppSizes.md),
+          Expanded(child: AppButton(text: 'Resolve', icon: Icons.check_circle_outline_rounded, isLoading: controller.isActionLoading, onPressed: controller.isActionLoading ? null : () async => controller.resolveFeedback(feedback.id))),
+        ]),
+      ]),
     );
   }
 }

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/language_controller.dart';
+import '../../../core/theme/theme_controller.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_skeleton.dart';
 import '../../main/controllers/main_tab_controller.dart';
@@ -24,7 +26,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
     if (_requestedInitialLoad) return;
     _requestedInitialLoad = true;
 
@@ -37,7 +38,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<HomeController>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: SafeArea(
@@ -47,15 +47,15 @@ class _HomeScreenState extends State<HomeScreen> {
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              SliverToBoxAdapter(
+              const SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
+                  padding: EdgeInsets.fromLTRB(
                     AppSizes.lg,
                     AppSizes.md,
                     AppSizes.lg,
                     AppSizes.sm,
                   ),
-                  child: _HomeHeader(isDark: isDark),
+                  child: _HomeHeader(),
                 ),
               ),
               if (controller.error != null && !controller.hasLoadedOnce)
@@ -73,13 +73,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       AppSizes.lg,
                       AppSizes.md,
                       AppSizes.lg,
-                      110,
+                      132,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (controller.isLoading && controller.userInfo == null)
-                          const LoadingSkeleton(height: 260, borderRadius: AppSizes.radiusXl)
+                          const LoadingSkeleton(
+                            height: 260,
+                            borderRadius: AppSizes.radiusXl,
+                          )
                         else
                           const TokenBalanceCard(),
                         const SizedBox(height: AppSizes.xl),
@@ -92,19 +95,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                 'Recent Scans',
                                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.w900,
-                                  letterSpacing: -0.3,
+                                  letterSpacing: -0.4,
                                 ),
                               ),
                             ),
                             TextButton(
                               onPressed: () => context.read<MainTabController>().goHistory(),
-                              child: const Text(
-                                'View all',
-                                style: TextStyle(
-                                  color: AppColors.primaryTeal,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
+                              child: const Text('View all'),
                             ),
                           ],
                         ),
@@ -126,12 +123,11 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _HomeHeader extends StatelessWidget {
-  final bool isDark;
-
-  const _HomeHeader({required this.isDark});
+  const _HomeHeader();
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final home = context.watch<HomeController>();
     final user = home.userInfo;
     final name = user?.fullName.trim().isNotEmpty == true ? user!.fullName : 'there';
@@ -143,19 +139,19 @@ class _HomeHeader extends StatelessWidget {
           height: 48,
           decoration: BoxDecoration(
             gradient: AppColors.tealGradient,
-            borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+            borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primaryTeal.withOpacity(0.22),
+                color: AppColors.primaryTeal.withOpacity(0.24),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
             ],
           ),
           child: const Icon(
-            Icons.account_balance_wallet_rounded,
+            Icons.account_balance_rounded,
             color: Colors.white,
-            size: 25,
+            size: 23,
           ),
         ),
         const SizedBox(width: AppSizes.md),
@@ -164,36 +160,110 @@ class _HomeHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Welcome back,',
+                'BanknoteAI Workspace',
                 style: TextStyle(
                   color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
                   fontSize: 12,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
-                name,
+                'Welcome back, $name',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: -0.4,
+                  letterSpacing: -0.5,
                 ),
               ),
             ],
           ),
         ),
-        IconButton(
-          onPressed: () {},
-          icon: Icon(
-            Icons.notifications_none_rounded,
-            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-          ),
-        ),
+        const _LanguagePill(),
+        const SizedBox(width: AppSizes.sm),
+        const _ThemePill(),
       ],
+    );
+  }
+}
+
+class _LanguagePill extends StatelessWidget {
+  const _LanguagePill();
+
+  @override
+  Widget build(BuildContext context) {
+    final language = context.watch<LanguageController>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final label = language.currentLocale.toUpperCase();
+
+    return InkWell(
+      onTap: language.toggleLanguage,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.cardDark : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.2,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label == 'EN' ? 'VI' : 'EN',
+              style: TextStyle(
+                color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemePill extends StatelessWidget {
+  const _ThemePill();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeController>();
+    final isDark = theme.isDarkMode(context);
+
+    return InkWell(
+      onTap: () => theme.toggleTheme(context),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 40,
+        height: 40,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.cardDark : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+        ),
+        child: Icon(
+          isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+          size: 18,
+          color: isDark ? AppColors.primaryLightTeal : AppColors.textSecondaryLight,
+        ),
+      ),
     );
   }
 }

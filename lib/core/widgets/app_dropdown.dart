@@ -50,24 +50,28 @@ class AppDropdown<T> extends StatelessWidget {
           ),
           const SizedBox(height: 8),
         ],
-        Container(
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
           height: AppSizes.inputFieldHeight,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
             color: enabled
-                ? (isDark ? AppColors.cardDark : Colors.white)
-                : (isDark ? AppColors.bgDark : const Color(0xFFF1F5F9)),
+                ? isDark
+                ? AppColors.cardDark
+                : Colors.white
+                : isDark
+                ? AppColors.bgDark
+                : AppColors.slate100,
             borderRadius: BorderRadius.circular(AppSizes.radiusLg),
             border: Border.all(color: borderColor),
+            boxShadow: !isDark && enabled
+                ? [BoxShadow(color: Colors.black.withOpacity(0.025), blurRadius: 12, offset: const Offset(0, 6))]
+                : null,
           ),
           child: Row(
             children: [
               if (prefixIcon != null) ...[
-                Icon(
-                  prefixIcon,
-                  size: 19,
-                  color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
-                ),
+                Icon(prefixIcon, size: 19, color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight),
                 const SizedBox(width: 10),
               ],
               Expanded(
@@ -88,10 +92,7 @@ class AppDropdown<T> extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    icon: Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
-                    ),
+                    icon: Icon(Icons.keyboard_arrow_down_rounded, color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight),
                     style: TextStyle(
                       color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                       fontWeight: FontWeight.w800,

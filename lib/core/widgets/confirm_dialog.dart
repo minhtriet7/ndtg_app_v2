@@ -61,71 +61,29 @@ class ConfirmDialog extends StatelessWidget {
         padding: const EdgeInsets.all(AppSizes.lg),
         decoration: BoxDecoration(
           color: isDark ? AppColors.cardDark : Colors.white,
-          borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+          borderRadius: BorderRadius.circular(AppSizes.radiusXxl),
           border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
-              blurRadius: 30,
-              offset: const Offset(0, 16),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.35 : 0.12), blurRadius: 32, offset: const Offset(0, 18))],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
-                color: accent.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Icon(icon, color: accent, size: 30),
+              width: 62,
+              height: 62,
+              decoration: BoxDecoration(color: accent.withOpacity(0.12), borderRadius: BorderRadius.circular(22)),
+              child: Icon(icon, color: accent, size: 31),
             ),
             const SizedBox(height: 18),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-              ),
-            ),
+            Text(title, textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight)),
             const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.45,
-                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-              ),
-            ),
+            Text(message, textAlign: TextAlign.center, style: TextStyle(fontSize: 14, height: 1.45, color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight)),
             const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: AppButton(
-                    text: cancelText,
-                    variant: AppButtonVariant.secondary,
-                    onPressed: () => Navigator.of(context).pop(false),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: AppButton(
-                    text: confirmText,
-                    variant: danger ? AppButtonVariant.danger : AppButtonVariant.primary,
-                    onPressed: () {
-                      Navigator.of(context).pop(true);
-                      onConfirm?.call();
-                    },
-                  ),
-                ),
-              ],
-            ),
+            Row(children: [
+              Expanded(child: AppButton(text: cancelText, variant: AppButtonVariant.secondary, onPressed: () => Navigator.of(context).pop(false))),
+              const SizedBox(width: 12),
+              Expanded(child: AppButton(text: confirmText, variant: danger ? AppButtonVariant.danger : AppButtonVariant.primary, onPressed: () { Navigator.of(context).pop(true); onConfirm?.call(); })),
+            ]),
           ],
         ),
       ),

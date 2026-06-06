@@ -18,7 +18,7 @@ class ImagePreviewScreen extends StatelessWidget {
     final image = controller.selectedImage;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Confirm Image')),
+      appBar: AppBar(title: const Text('Confirm Banknote Image')),
       body: image == null
           ? const Center(child: Text('No selected image found.'))
           : SafeArea(
@@ -75,8 +75,8 @@ class ImagePreviewScreen extends StatelessWidget {
                   Expanded(
                     flex: 2,
                     child: AppButton(
-                      text: 'Analyze Now',
-                      icon: Icons.auto_awesome_rounded,
+                      text: 'Analyze Banknote',
+                      icon: Icons.document_scanner_rounded,
                       onPressed: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(builder: (_) => const ProcessingScreen()),

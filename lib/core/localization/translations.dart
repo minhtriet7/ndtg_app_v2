@@ -35,6 +35,14 @@ class Translations {
       'tokens': 'Token',
       'theme': 'Giao diện',
       'language': 'Ngôn ngữ',
+      // BỔ SUNG TEXT CHO MÀN HÌNH SETTINGS
+      'preferences': 'Tùy chỉnh',
+      'preferencesDesc': 'Tùy chỉnh trải nghiệm BanknoteAI trên thiết bị này.',
+      'languageDesc': 'Tiếng Việt là mặc định, có hỗ trợ Tiếng Anh',
+      'appearanceDesc': 'Nhấn để chuyển đổi chế độ Sáng/Tối',
+      'security': 'Bảo mật',
+      'securityDesc': 'Phiên đăng nhập của bạn được lưu trữ an toàn',
+      'themeNotice': 'Giao diện hiện được điều khiển thủ công. Thay đổi ngôn ngữ sẽ áp dụng ngay lập tức trên các tiện ích được hỗ trợ.',
     },
     'en': {
       'appName': 'BanknoteAI',
@@ -69,6 +77,14 @@ class Translations {
       'tokens': 'Tokens',
       'theme': 'Theme',
       'language': 'Language',
+      // BỔ SUNG TEXT CHO MÀN HÌNH SETTINGS
+      'preferences': 'Preferences',
+      'preferencesDesc': 'Customize your BanknoteAI experience on this device.',
+      'languageDesc': 'English first, Vietnamese available',
+      'appearanceDesc': 'Tap to toggle Light/Dark mode',
+      'security': 'Security',
+      'securityDesc': 'Your session token is stored securely',
+      'themeNotice': 'Theme switching is now controlled manually by the ThemeController. Language changes will reflect instantly on supported widgets.',
     },
   };
 }

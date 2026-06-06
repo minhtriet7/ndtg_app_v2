@@ -44,6 +44,21 @@ class AdminLiteController extends ChangeNotifier {
       _systemHealth = results[1] as Map<String, dynamic>;
       _pendingTransactions = results[2] as List<AdminTransactionModel>;
       _pendingFeedbacks = results[3] as List<AdminFeedbackModel>;
+
+      // Some backend dashboard summaries may omit pending counters while
+      // the pending-list endpoints return real data. Use the loaded lists as
+      // a safe UI fallback without changing backend behavior.
+      if ((_dashboard.pendingTransactions == 0 && _pendingTransactions.isNotEmpty) ||
+          (_dashboard.pendingFeedbacks == 0 && _pendingFeedbacks.isNotEmpty)) {
+        _dashboard = _dashboard.copyWith(
+          pendingTransactions: _dashboard.pendingTransactions == 0
+              ? _pendingTransactions.length
+              : _dashboard.pendingTransactions,
+          pendingFeedbacks: _dashboard.pendingFeedbacks == 0
+              ? _pendingFeedbacks.length
+              : _dashboard.pendingFeedbacks,
+        );
+      }
     } catch (e) {
       _error = e is ApiException ? e.message : 'Failed to load admin dashboard.';
     } finally {

@@ -1,11 +1,6 @@
-import 'dart:convert';
-
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
-import '../../../core/constants/storage_keys.dart';
 import '../../../core/network/api_exception.dart';
-import '../../../core/storage/local_storage.dart';
 import '../../../core/storage/secure_storage.dart';
 import '../data/auth_service.dart';
 import '../models/auth_response.dart';
@@ -16,59 +11,94 @@ class AuthController extends ChangeNotifier {
   final AuthService _authService = AuthService();
 
   bool _isLoading = false;
-  bool _isCheckingAuth = true;
   String? _error;
   UserInfo? _currentUser;
+  bool _isCheckingAuth = true;
 
   bool get isLoading => _isLoading;
   bool get isCheckingAuth => _isCheckingAuth;
   String? get error => _error;
   UserInfo? get currentUser => _currentUser;
   bool get isAuthenticated => _currentUser != null;
-  bool get isAdmin => _currentUser?.isAdmin ?? false;
 
   Future<bool> login(String email, String password) async {
-    _setLoading(true);
+    _isLoading = true;
     _error = null;
+    notifyListeners();
 
     try {
       final response = await _authService.login(
         LoginRequest(email: email, password: password),
       );
 
-      if (!response.hasToken) {
-        throw ApiException(message: 'Login succeeded but no access token was returned.');
+      if (response.accessToken.isNotEmpty) {
+        await SecureStorage.instance.saveToken(response.accessToken);
       }
-
-      await _persistSession(response.accessToken, response.user);
-      _setLoading(false);
+      _currentUser = response.user;
+      _isLoading = false;
+      notifyListeners();
       return true;
-    } catch (error) {
-      _setError(_readError(error, fallback: 'Login failed. Please check your credentials.'));
-      _setLoading(false);
+    } catch (e) {
+      _isLoading = false;
+      _error = e is ApiException ? e.message : 'Đăng nhập thất bại. Vui lòng thử lại.';
+      notifyListeners();
       return false;
     }
   }
 
   Future<bool> register(String email, String password, String fullName) async {
-    _setLoading(true);
+    _isLoading = true;
     _error = null;
+    notifyListeners();
 
     try {
-      final response = await _authService.register(
+      // 1. Gọi API Đăng ký (Backend chỉ tạo tài khoản, không cấp Token)
+      await _authService.register(
         RegisterRequest(email: email, password: password, fullName: fullName),
       );
 
-      if (!response.hasToken) {
-        throw ApiException(message: 'Registration succeeded but no access token was returned.');
+      // 2. Tự động gọi API Đăng nhập ngầm để lấy Token lưu vào máy
+      final loginResponse = await _authService.login(
+        LoginRequest(email: email, password: password),
+      );
+
+      if (loginResponse.accessToken.isNotEmpty) {
+        await SecureStorage.instance.saveToken(loginResponse.accessToken);
       }
 
-      await _persistSession(response.accessToken, response.user);
-      _setLoading(false);
+      _currentUser = loginResponse.user;
+      _isLoading = false;
+      notifyListeners();
       return true;
-    } catch (error) {
-      _setError(_readError(error, fallback: 'Registration failed. Please review your information.'));
-      _setLoading(false);
+    } catch (e) {
+      _isLoading = false;
+      _error = e is ApiException ? e.message : 'Không thể tạo tài khoản.';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ĐÃ THÊM LẠI HÀM NÀY ĐỂ FIX LỖI ĐỎ Ở MÀN HÌNH LOGIN/REGISTER
+  Future<bool> loginWithGoogle() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final token = await _authService.authenticateWithGoogle();
+
+      await SecureStorage.instance.saveToken(token);
+      _currentUser = await _authService.getMe();
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _error = e is ApiException
+          ? e.message
+          : 'Google sign-in was cancelled or failed.';
+      notifyListeners();
       return false;
     }
   }
@@ -78,83 +108,32 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
 
     final token = await SecureStorage.instance.getToken();
-    if (token == null || token.isEmpty) {
-      _currentUser = null;
-      _isCheckingAuth = false;
-      notifyListeners();
-      return;
-    }
 
-    try {
-      _currentUser = await _authService.getMe();
-      await LocalStorage.instance.saveString(
-        StorageKeys.userJson,
-        jsonEncode(_currentUser!.toJson()),
-      );
-    } catch (_) {
-      await logout(notify: false);
+    if (token != null && token.isNotEmpty) {
+      try {
+        _currentUser = await _authService.getMe();
+      } catch (_) {
+        await logout();
+      }
+    } else {
+      _currentUser = null;
     }
 
     _isCheckingAuth = false;
     notifyListeners();
   }
 
-  Future<void> refreshProfile() async {
-    if (!isAuthenticated) return;
-    try {
-      _currentUser = await _authService.getMe();
-      await LocalStorage.instance.saveString(
-        StorageKeys.userJson,
-        jsonEncode(_currentUser!.toJson()),
-      );
-      notifyListeners();
-    } catch (error) {
-      _setError(_readError(error, fallback: 'Unable to refresh profile.'));
-    }
-  }
-
-  Future<void> logout({bool notify = true}) async {
+  Future<void> logout() async {
     await SecureStorage.instance.clearToken();
-    await LocalStorage.instance.remove(StorageKeys.userJson);
-    await LocalStorage.instance.remove(StorageKeys.activeRecognitionTaskId);
-    await LocalStorage.instance.remove(StorageKeys.activePaymentId);
     _currentUser = null;
     _error = null;
-    _isLoading = false;
-    if (notify) notifyListeners();
+    notifyListeners();
   }
 
   void clearError() {
-    if (_error == null) return;
-    _error = null;
-    notifyListeners();
-  }
-
-  Future<void> _persistSession(String token, UserInfo user) async {
-    await SecureStorage.instance.saveToken(token);
-    await LocalStorage.instance.saveString(StorageKeys.userJson, jsonEncode(user.toJson()));
-    _currentUser = user;
-    _error = null;
-    notifyListeners();
-  }
-
-  void _setLoading(bool value) {
-    _isLoading = value;
-    notifyListeners();
-  }
-
-  void _setError(String message) {
-    _error = message;
-    notifyListeners();
-  }
-
-  String _readError(Object error, {required String fallback}) {
-    if (error is ApiException) return error.message;
-    if (error is DioException) {
-      final inner = error.error;
-      if (inner is ApiException) return inner.message;
-      if (error.message != null && error.message!.isNotEmpty) return error.message!;
+    if (_error != null) {
+      _error = null;
+      notifyListeners();
     }
-    return fallback;
   }
 }

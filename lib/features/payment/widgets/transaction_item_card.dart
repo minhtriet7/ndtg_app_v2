@@ -20,8 +20,8 @@ class TransactionItemCard extends StatelessWidget {
   }
 
   IconData _icon() {
-    if (transaction.isSuccess) return Icons.check_circle_rounded;
-    if (transaction.isFailed) return Icons.cancel_rounded;
+    if (transaction.isSuccess) return Icons.check_rounded;
+    if (transaction.isFailed) return Icons.close_rounded;
     return Icons.schedule_rounded;
   }
 
@@ -33,16 +33,19 @@ class TransactionItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return AppCard(
       padding: const EdgeInsets.all(AppSizes.md),
       child: Row(
         children: [
           Container(
-            width: 46,
-            height: 46,
+            width: 50,
+            height: 50,
             decoration: BoxDecoration(
               color: _color().withOpacity(0.12),
-              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+              borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+              border: Border.all(color: _color().withOpacity(0.12)),
             ),
             child: Icon(_icon(), color: _color()),
           ),
@@ -55,17 +58,17 @@ class TransactionItemCard extends StatelessWidget {
                   transaction.transactionCode,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w900),
+                  style: TextStyle(color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight, fontWeight: FontWeight.w900),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 5),
                 Text(
                   DateFormatter.formatDateTime(transaction.createdAt),
-                  style: const TextStyle(fontSize: 12, color: AppColors.textMutedLight),
+                  style: TextStyle(fontSize: 12, color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight, fontWeight: FontWeight.w600),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 5),
                 Text(
                   '+${MoneyFormatter.formatToken(transaction.tokensAdded)} tokens • ${transaction.gateway.toUpperCase()}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.warning),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.primaryTeal),
                 ),
               ],
             ),
@@ -74,10 +77,7 @@ class TransactionItemCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                MoneyFormatter.formatVnd(transaction.amount),
-                style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primaryTeal),
-              ),
+              Text(MoneyFormatter.formatVnd(transaction.amount), style: TextStyle(fontWeight: FontWeight.w900, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight)),
               const SizedBox(height: 8),
               AppBadge(text: transaction.status, status: _badgeStatus()),
             ],

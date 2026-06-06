@@ -30,61 +30,83 @@ class SettingsTile extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = danger ? AppColors.danger : (iconColor ?? AppColors.primaryTeal);
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.md,
-        vertical: AppSizes.xs,
-      ),
-      leading: Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-        ),
-        child: Icon(icon, color: color, size: 22),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: danger
-              ? AppColors.danger
-              : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
-          fontSize: 15,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-      subtitle: subtitle == null
-          ? null
-          : Text(
-        subtitle!,
-        style: TextStyle(
-          color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      trailing: trailing ??
-          Row(
-            mainAxisSize: MainAxisSize.min,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: AppSizes.sm),
+          child: Row(
             children: [
-              if (trailingText != null)
-                Text(
-                  trailingText!,
-                  style: const TextStyle(
-                    color: AppColors.primaryTeal,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 13,
-                  ),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(isDark ? 0.16 : 0.10),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+                  border: Border.all(color: color.withOpacity(0.08)),
                 ),
-              const SizedBox(width: AppSizes.xs),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+                child: Icon(icon, color: color, size: 21),
               ),
+              const SizedBox(width: AppSizes.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: danger ? AppColors.danger : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    if (subtitle != null && subtitle!.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+                          fontSize: 12,
+                          height: 1.25,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSizes.sm),
+              trailing ??
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (trailingText != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: AppSizes.sm, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.10),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            trailingText!,
+                            style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 11),
+                          ),
+                        ),
+                      if (onTap != null) ...[
+                        const SizedBox(width: AppSizes.xs),
+                        Icon(Icons.chevron_right_rounded, color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight),
+                      ],
+                    ],
+                  ),
             ],
           ),
-      onTap: onTap,
+        ),
+      ),
     );
   }
 }

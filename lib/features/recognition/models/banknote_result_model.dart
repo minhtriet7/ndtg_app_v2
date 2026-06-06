@@ -128,7 +128,13 @@ class BanknoteResultModel {
       return 'Unknown Banknote';
     }
 
-    if (currency.toLowerCase() == 'unknown') return denomination;
+    // Nếu denomination đã chứa chữ cái (ví dụ: "1 USD"), không cần nối thêm currency nữa
+    if (currency.toLowerCase() == 'unknown' ||
+        currency.isEmpty ||
+        denomination.toLowerCase().contains(currency.toLowerCase())) {
+      return denomination.toUpperCase();
+    }
+
     return '$denomination $currency';
   }
 }

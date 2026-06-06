@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/constants/api_endpoints.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/dio_client.dart';
@@ -17,20 +19,25 @@ class AuthService {
         ApiEndpoints.login,
         data: request.toJson(),
       );
-      return AuthResponse.fromJson(response.data);
+
+      return AuthResponse.fromJson(
+        ResponseParser.parseMap(response.data ?? response),
+      );
     } on DioException catch (error) {
       final statusCode = error.response?.statusCode;
 
-      // Some FastAPI auth endpoints use OAuth2PasswordRequestForm.
-      // Retry with form data only when the JSON shape is rejected, not on invalid credentials.
       if (statusCode == 400 || statusCode == 415 || statusCode == 422) {
         final formResponse = await _client.post(
           ApiEndpoints.login,
           data: FormData.fromMap(request.toFormJson()),
           options: Options(contentType: Headers.formUrlEncodedContentType),
         );
-        return AuthResponse.fromJson(formResponse.data);
+
+        return AuthResponse.fromJson(
+          ResponseParser.parseMap(formResponse.data ?? formResponse),
+        );
       }
+
       rethrow;
     }
   }
@@ -40,27 +47,49 @@ class AuthService {
       ApiEndpoints.register,
       data: request.toJson(),
     );
-    return AuthResponse.fromJson(response.data);
+
+    return AuthResponse.fromJson(
+      ResponseParser.parseMap(response.data ?? response),
+    );
   }
 
   Future<UserInfo> getMe() async {
-    Response response;
-    try {
-      response = await _client.get(ApiEndpoints.authMe);
-    } on DioException catch (error) {
-      final statusCode = error.response?.statusCode;
-      if (statusCode == 404 || statusCode == 405) {
-        response = await _client.get(ApiEndpoints.userMe);
-      } else {
-        rethrow;
-      }
-    }
+    final response = await _client.get(ApiEndpoints.userMe);
 
     final payload = ResponseParser.parseMap(response);
-    final data = ResponseParser.parseMap(payload['data'] ?? payload['user'] ?? payload);
+    final data = ResponseParser.parseMap(
+      payload['data'] ?? payload['user'] ?? payload,
+    );
+
     if (data.isEmpty) {
       throw ApiException(message: 'Unable to read current user profile.');
     }
+
     return UserInfo.fromJson(data);
+  }
+
+  String getGoogleLoginUrl() {
+    final root = AppConfig.baseUrl.endsWith('/api/v1')
+        ? AppConfig.baseUrl.substring(0, AppConfig.baseUrl.length - '/api/v1'.length)
+        : AppConfig.baseUrl;
+
+    return '$root/api/v1/auth/google/login?platform=mobile';
+  }
+
+  Future<String> authenticateWithGoogle() async {
+    final callbackUrl = await FlutterWebAuth2.authenticate(
+      url: getGoogleLoginUrl(),
+      callbackUrlScheme: 'banknoteai',
+    );
+
+    final uri = Uri.parse(callbackUrl);
+    final token = uri.queryParameters['token'];
+
+    if (token == null || token.isEmpty) {
+      final error = uri.queryParameters['error'] ?? 'Google login failed.';
+      throw ApiException(message: error);
+    }
+
+    return token;
   }
 }

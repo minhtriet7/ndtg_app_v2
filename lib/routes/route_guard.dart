@@ -15,6 +15,29 @@ class RouteGuard extends StatelessWidget {
     this.adminOnly = false,
   });
 
+  bool _isAdmin(AuthController auth) {
+    final role = (auth.currentUser?.role ?? '').toLowerCase().trim();
+    return role == 'admin' || role == 'superadmin';
+  }
+
+  void _goToLogin(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) return;
+
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        RouteNames.login,
+            (route) => false,
+      );
+    });
+  }
+
+  void _goToMain(BuildContext context) {
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      RouteNames.main,
+          (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
@@ -28,20 +51,11 @@ class RouteGuard extends StatelessWidget {
     }
 
     if (!auth.isAuthenticated) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (Navigator.of(context).canPop()) {
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            RouteNames.login,
-                (route) => false,
-          );
-        } else {
-          Navigator.of(context).pushReplacementNamed(RouteNames.login);
-        }
-      });
+      _goToLogin(context);
       return const SizedBox.shrink();
     }
 
-    if (adminOnly && !auth.isAdmin) {
+    if (adminOnly && !_isAdmin(auth)) {
       return Scaffold(
         appBar: AppBar(title: const Text('Access denied')),
         body: Center(
@@ -71,10 +85,7 @@ class RouteGuard extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 FilledButton(
-                  onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil(
-                    RouteNames.main,
-                        (route) => false,
-                  ),
+                  onPressed: () => _goToMain(context),
                   child: const Text('Back to app'),
                 ),
               ],

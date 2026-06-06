@@ -13,19 +13,41 @@ class ExchangeRateChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: AppSizes.sm),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.cardDark : Colors.white,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        color: isDark ? AppColors.bgDark : AppColors.bgLight,
+        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
         border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('1 ${rate.targetCurrency}', style: TextStyle(color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight, fontWeight: FontWeight.w900)),
+          Container(
+            width: 8,
+            height: 8,
+            decoration: const BoxDecoration(
+              color: AppColors.primaryTeal,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '1 ${rate.targetCurrency}',
+            style: TextStyle(
+              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
           const SizedBox(width: 6),
-          Text('= ${MoneyFormatter.formatVnd(rate.effectiveRateToVnd)}', style: const TextStyle(color: AppColors.primaryTeal, fontWeight: FontWeight.w900)),
+          Text(
+            '= ${MoneyFormatter.formatVnd(rate.effectiveRateToVnd)}',
+            style: const TextStyle(
+              color: AppColors.primaryTeal,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
         ],
       ),
     );

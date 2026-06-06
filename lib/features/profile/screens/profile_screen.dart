@@ -42,16 +42,31 @@ class _ProfileView extends StatelessWidget {
       id: authUser?.id ?? '',
       email: authUser?.email ?? '',
       fullName: authUser?.fullName ?? 'BanknoteAI User',
-      avatarUrl: '',
+      avatarUrl: authUser?.avatarUrl ?? '',
       role: authUser?.role ?? 'user',
-      provider: 'email',
+      provider: authUser?.provider ?? 'email',
       tokenBalance: authUser?.tokenBalance ?? 0,
       totalScans: 0,
       createdAt: '',
       updatedAt: '',
     );
 
-    final user = controller.profile ?? fallbackUser;
+    var user = controller.profile ?? fallbackUser;
+
+    if (authUser != null) {
+      final authRole = authUser.role.toLowerCase().trim();
+      final profileRole = user.role.toLowerCase().trim();
+      if ((authRole == 'admin' || authRole == 'superadmin') &&
+          profileRole != authRole) {
+        user = user.copyWith(role: authUser.role);
+      }
+      if (user.avatarUrl.isEmpty && authUser.avatarUrl.isNotEmpty) {
+        user = user.copyWith(avatarUrl: authUser.avatarUrl);
+      }
+      if (user.tokenBalance == 0 && authUser.tokenBalance > 0) {
+        user = user.copyWith(tokenBalance: authUser.tokenBalance);
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -98,7 +113,12 @@ class _ProfileView extends StatelessWidget {
     }
 
     return ListView(
-      padding: const EdgeInsets.all(AppSizes.lg),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.lg,
+        AppSizes.lg,
+        AppSizes.lg,
+        148,
+      ),
       children: [
         ProfileHeader(user: user),
         const SizedBox(height: AppSizes.lg),
@@ -107,6 +127,12 @@ class _ProfileView extends StatelessWidget {
           onTopUp: () => Navigator.of(context).pushNamed(RouteNames.pricing),
           onTransactions: () => Navigator.of(context).pushNamed(RouteNames.transactions),
         ),
+        if (user.isAdmin) ...[
+          const SizedBox(height: AppSizes.lg),
+          _AdminAccessCard(
+            onTap: () => Navigator.of(context).pushNamed(RouteNames.adminDashboard),
+          ),
+        ],
         const SizedBox(height: AppSizes.lg),
         AppCard(
           padding: EdgeInsets.zero,
@@ -124,7 +150,7 @@ class _ProfileView extends StatelessWidget {
                   );
                 },
               ),
-              const Divider(height: 1),
+              const _SectionDivider(),
               SettingsTile(
                 icon: Icons.settings_rounded,
                 title: 'App Settings',
@@ -135,7 +161,7 @@ class _ProfileView extends StatelessWidget {
                   );
                 },
               ),
-              const Divider(height: 1),
+              const _SectionDivider(),
               SettingsTile(
                 icon: Icons.menu_book_rounded,
                 title: 'User Guide',
@@ -146,7 +172,7 @@ class _ProfileView extends StatelessWidget {
                   );
                 },
               ),
-              const Divider(height: 1),
+              const _SectionDivider(),
               SettingsTile(
                 icon: Icons.feedback_rounded,
                 title: 'Feedback',
@@ -154,12 +180,13 @@ class _ProfileView extends StatelessWidget {
                 onTap: () => Navigator.of(context).pushNamed(RouteNames.feedback),
               ),
               if (user.isAdmin) ...[
-                const Divider(height: 1),
+                const _SectionDivider(),
                 SettingsTile(
                   icon: Icons.admin_panel_settings_rounded,
                   title: 'Admin Lite',
-                  subtitle: 'Quick system overview for administrators',
-                  iconColor: AppColors.info,
+                  subtitle: 'Open management dashboard',
+                  iconColor: AppColors.danger,
+                  trailingText: 'ADMIN',
                   onTap: () => Navigator.of(context).pushNamed(RouteNames.adminDashboard),
                 ),
               ],
@@ -177,7 +204,6 @@ class _ProfileView extends StatelessWidget {
             onTap: () => _confirmLogout(context),
           ),
         ),
-        const SizedBox(height: AppSizes.xxl),
       ],
     );
   }
@@ -207,5 +233,91 @@ class _ProfileView extends StatelessWidget {
     if (confirmed == true && context.mounted) {
       await controller.logout(context);
     }
+  }
+}
+
+class _AdminAccessCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _AdminAccessCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return AppCard(
+      onTap: onTap,
+      padding: EdgeInsets.zero,
+      child: Container(
+        padding: const EdgeInsets.all(AppSizes.lg),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+          gradient: LinearGradient(
+            colors: isDark
+                ? [const Color(0xFF312E81), const Color(0xFF0F172A)]
+                : [const Color(0xFFFFFBEB), const Color(0xFFFFF7ED)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          border: Border.all(
+            color: isDark ? AppColors.violet.withOpacity(0.35) : AppColors.warning.withOpacity(0.30),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppColors.warning.withOpacity(isDark ? 0.20 : 0.15),
+                borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+              ),
+              child: const Icon(Icons.admin_panel_settings_rounded, color: AppColors.warning),
+            ),
+            const SizedBox(width: AppSizes.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Admin Lite',
+                    style: TextStyle(
+                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Manage payments, feedback, and system health.',
+                    style: TextStyle(
+                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+class _SectionDivider extends StatelessWidget {
+  const _SectionDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Divider(
+      height: 1,
+      thickness: 1,
+      color: isDark ? AppColors.borderDark : AppColors.borderLight,
+    );
   }
 }

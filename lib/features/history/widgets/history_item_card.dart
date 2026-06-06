@@ -12,54 +12,50 @@ import '../../recognition/screens/result_detail_screen.dart';
 class HistoryItemCard extends StatelessWidget {
   final BanknoteResultModel result;
 
-  const HistoryItemCard({
-    super.key,
-    required this.result,
-  });
+  const HistoryItemCard({super.key, required this.result});
 
   BadgeStatus _badgeStatus(String status) {
     final normalized = status.toLowerCase();
-    if (normalized == 'completed' || normalized == 'success' || normalized == 'done') {
-      return BadgeStatus.success;
-    }
+    if (normalized == 'completed' || normalized == 'success' || normalized == 'done') return BadgeStatus.success;
     if (normalized == 'failed' || normalized == 'error') return BadgeStatus.error;
     if (normalized == 'needs_review' || normalized == 'review') return BadgeStatus.warning;
     return BadgeStatus.info;
   }
 
   String get _title {
-    final denomination = result.finalResult.denomination;
-    final currency = result.finalResult.currency;
-    if (denomination.toLowerCase() == 'unknown' && currency.toLowerCase() == 'unknown') {
-      return 'Unknown banknote';
-    }
-    return '$denomination $currency';
+    final denomination = result.finalResult.denomination.trim();
+    final currency = result.finalResult.currency.trim();
+    if (denomination.toLowerCase() == 'unknown' && currency.toLowerCase() == 'unknown') return 'Unknown banknote';
+    return [denomination, currency].where((item) => item.isNotEmpty).join(' ');
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final consensusText = result.finalResult.matchedAgents.trim().isNotEmpty
+        ? result.finalResult.matchedAgents
+        : 'Consensus N/A';
 
     return AppCard(
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => ResultDetailScreen(result: result)),
-        );
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => ResultDetailScreen(result: result)));
       },
       padding: const EdgeInsets.all(AppSizes.md),
       child: Row(
         children: [
-          SizedBox(
-            width: 64,
-            height: 64,
+          Container(
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+              border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+            ),
+            clipBehavior: Clip.antiAlias,
             child: result.imageUrl.isNotEmpty
-                ? NetworkImageView(imageUrl: result.imageUrl, borderRadius: AppSizes.radiusMd)
+                ? NetworkImageView(imageUrl: result.imageUrl, borderRadius: AppSizes.radiusLg, fit: BoxFit.cover)
                 : Container(
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-              ),
-              child: const Icon(Icons.image_not_supported_outlined),
+              color: AppColors.primaryTeal.withOpacity(0.08),
+              child: const Icon(Icons.account_balance_rounded, color: AppColors.primaryTeal),
             ),
           ),
           const SizedBox(width: AppSizes.md),
@@ -67,48 +63,79 @@ class HistoryItemCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.sm),
+                    AppBadge(text: result.status.replaceAll('_', ' '), status: _badgeStatus(result.status)),
+                  ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 5),
                 Text(
-                  result.finalResult.country,
+                  result.finalResult.country.isEmpty ? 'Country not confirmed' : result.finalResult.country,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                     fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  DateFormatter.formatDateTime(result.createdAt),
-                  style: TextStyle(
-                    color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
-                    fontSize: 12,
-                  ),
+                const SizedBox(height: AppSizes.sm),
+                Row(
+                  children: [
+                    _TinyMetric(label: '', value: consensusText),
+                    const SizedBox(width: AppSizes.sm),
+                    Expanded(
+                      child: Text(
+                        DateFormatter.formatDateTime(result.createdAt),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: TextStyle(color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight, fontSize: 12),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          const SizedBox(width: AppSizes.sm),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              AppBadge(text: result.status.replaceAll('_', ' '), status: _badgeStatus(result.status)),
-              const SizedBox(height: AppSizes.sm),
-              Icon(Icons.chevron_right_rounded, color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight),
-            ],
-          ),
         ],
+      ),
+    );
+  }
+}
+
+class _TinyMetric extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _TinyMetric({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.success.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.success.withOpacity(0.18)),
+      ),
+      child: Text(
+        label.isEmpty ? value : '$label $value',
+        style: const TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.w900),
       ),
     );
   }

@@ -4,10 +4,11 @@ import '../constants/storage_keys.dart';
 import '../storage/local_storage.dart';
 
 class LanguageController extends ChangeNotifier {
-  String _currentLocale = 'vi';
+  String _currentLocale = 'en';
 
   String get currentLocale => _currentLocale;
   bool get isVietnamese => _currentLocale == 'vi';
+  bool get isEnglish => _currentLocale == 'en';
 
   LanguageController() {
     loadLocale();
@@ -21,10 +22,12 @@ class LanguageController extends ChangeNotifier {
   }
 
   Future<void> changeLanguage(String languageCode) async {
-    if (languageCode != 'vi' && languageCode != 'en') return;
+    final normalized = languageCode.trim().toLowerCase();
+    if (normalized != 'vi' && normalized != 'en') return;
+    if (_currentLocale == normalized) return;
 
-    _currentLocale = languageCode;
-    await LocalStorage.instance.saveString(StorageKeys.languageCode, languageCode);
+    _currentLocale = normalized;
+    await LocalStorage.instance.saveString(StorageKeys.languageCode, normalized);
     notifyListeners();
   }
 

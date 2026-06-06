@@ -20,34 +20,75 @@ class TokenInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return AppCard(
+      padding: const EdgeInsets.all(AppSizes.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.auto_awesome_rounded, color: Colors.amber, size: 24),
-              SizedBox(width: AppSizes.sm),
-              Text(
-                'Token Wallet',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  gradient: AppColors.tealGradient,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryTeal.withOpacity(0.20),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.generating_tokens_rounded, color: Colors.white),
+              ),
+              const SizedBox(width: AppSizes.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Token Wallet',
+                      style: TextStyle(
+                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Multi-agent scan credits',
+                      style: TextStyle(
+                        color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSizes.md),
+          const SizedBox(height: AppSizes.lg),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                MoneyFormatter.formatToken(tokenBalance),
-                style: const TextStyle(
-                  color: AppColors.primaryTeal,
-                  fontSize: 42,
-                  height: 1,
-                  fontWeight: FontWeight.w900,
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    MoneyFormatter.formatToken(tokenBalance),
+                    style: const TextStyle(
+                      color: AppColors.primaryTeal,
+                      fontSize: 44,
+                      height: 0.95,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -1.2,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: AppSizes.sm),
@@ -58,7 +99,7 @@ class TokenInfoCard extends StatelessWidget {
                   style: TextStyle(
                     color: AppColors.primaryTeal,
                     fontSize: 16,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
@@ -66,34 +107,47 @@ class TokenInfoCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.sm),
           Text(
-            'Each successful AI recognition consumes 1 token.',
+            'Each successful recognition consumes 1 token. Top up when your balance is low.',
             style: TextStyle(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? AppColors.textSecondaryDark
-                  : AppColors.textSecondaryLight,
-              fontWeight: FontWeight.w500,
+              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+              height: 1.45,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: AppSizes.lg),
-          Row(
-            children: [
-              Expanded(
-                child: AppButton(
-                  text: 'Top Up',
-                  icon: Icons.add_card_rounded,
-                  onPressed: onTopUp,
-                ),
-              ),
-              const SizedBox(width: AppSizes.md),
-              Expanded(
-                child: AppButton(
-                  text: 'Transactions',
-                  type: ButtonType.outline,
-                  icon: Icons.receipt_long_rounded,
-                  onPressed: onTransactions,
-                ),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 310;
+              final topUp = AppButton(
+                text: 'Top Up',
+                icon: Icons.add_card_rounded,
+                onPressed: onTopUp,
+              );
+              final transactions = AppButton(
+                text: 'Transactions',
+                type: ButtonType.outline,
+                icon: Icons.receipt_long_rounded,
+                onPressed: onTransactions,
+              );
+
+              if (compact) {
+                return Column(
+                  children: [
+                    topUp,
+                    const SizedBox(height: AppSizes.sm),
+                    transactions,
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: topUp),
+                  const SizedBox(width: AppSizes.md),
+                  Expanded(child: transactions),
+                ],
+              );
+            },
           ),
         ],
       ),

@@ -28,45 +28,43 @@ class ResultSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final finalResult = result?.finalResult;
-    final displayTitle = title ??
-        (finalResult == null
-            ? 'Unknown Banknote'
-            : '${finalResult.denomination} ${finalResult.currency}');
+    final displayTitle = title ?? (finalResult == null ? 'Unknown Banknote' : '${finalResult.denomination} ${finalResult.currency}');
     final displaySubtitle = subtitle ?? finalResult?.country ?? 'Recognition result';
-    final displayConsensus = consensus ??
-        finalResult?.matchedAgents ??
-        (matched != null && total != null ? '$matched/$total Matched' : 'N/A');
+    final displayConsensus = consensus ?? finalResult?.matchedAgents ?? (matched != null && total != null ? '$matched/$total Matched' : 'N/A');
 
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Icon(Icons.verified_rounded, color: AppColors.success, size: 46),
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              gradient: AppColors.tealGradient,
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [BoxShadow(color: AppColors.primaryTeal.withOpacity(0.22), blurRadius: 18, offset: const Offset(0, 8))],
+            ),
+            child: const Icon(Icons.check_rounded, color: Colors.white, size: 30),
+          ),
           const SizedBox(height: AppSizes.md),
           Text(
             displayTitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w900,
-              color: AppColors.primaryTeal,
-            ),
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppColors.primaryTeal, letterSpacing: -0.8),
           ),
           const SizedBox(height: 6),
           Text(
             displaySubtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: AppColors.textSecondaryLight),
+            style: TextStyle(color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: AppSizes.md),
           ConsensusBadge(consensus: displayConsensus),
           if (label != null) ...[
             const SizedBox(height: AppSizes.sm),
-            Text(
-              label!,
-              style: const TextStyle(fontSize: 12, color: AppColors.textMutedLight),
-            ),
+            Text(label!, style: TextStyle(fontSize: 12, color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight)),
           ],
         ],
       ),

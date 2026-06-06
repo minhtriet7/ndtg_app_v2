@@ -41,7 +41,12 @@ class RecognitionService {
       response = await _client.post(
         ApiEndpoints.recognitionAnalyze,
         data: formData,
-        options: Options(contentType: 'multipart/form-data'),
+        options: Options(
+          contentType: 'multipart/form-data',
+          // Ép buộc kết nối chờ tối đa 5 phút cho luồng AI
+          receiveTimeout: const Duration(minutes: 5),
+          sendTimeout: const Duration(minutes: 1),
+        ),
       );
     } catch (error) {
       final apiError = _unwrapApiException(error);
@@ -53,7 +58,12 @@ class RecognitionService {
       response = await _client.post(
         ApiEndpoints.recognitionStart,
         data: formData,
-        options: Options(contentType: 'multipart/form-data'),
+        options: Options(
+          contentType: 'multipart/form-data',
+          // Ép buộc kết nối chờ tối đa 5 phút cho luồng fallback
+          receiveTimeout: const Duration(minutes: 5),
+          sendTimeout: const Duration(minutes: 1),
+        ),
       );
     }
 

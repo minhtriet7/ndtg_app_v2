@@ -21,19 +21,14 @@ class _ProcessingScreenState extends State<ProcessingScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
     if (!_started) {
       _started = true;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         final controller = context.read<RecognitionController>();
         await controller.startAnalysis();
-
         if (!mounted) return;
-
         if (controller.finalResult != null) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const ResultScreen()),
-          );
+          Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const ResultScreen()));
         }
       });
     }
@@ -47,10 +42,7 @@ class _ProcessingScreenState extends State<ProcessingScreen> {
     return PopScope(
       canPop: false,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('AI Processing'),
-          automaticallyImplyLeading: false,
-        ),
+        appBar: AppBar(title: const Text('Multi-Agent Analysis'), automaticallyImplyLeading: false),
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(AppSizes.lg),
@@ -58,29 +50,20 @@ class _ProcessingScreenState extends State<ProcessingScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(AppSizes.lg),
+                  padding: const EdgeInsets.all(AppSizes.xl),
                   decoration: BoxDecoration(
                     gradient: AppColors.tealGradient,
-                    borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusXxl),
+                    boxShadow: [BoxShadow(color: AppColors.primaryTeal.withOpacity(0.22), blurRadius: 28, offset: const Offset(0, 14))],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.smart_toy_outlined, color: Colors.white, size: 42),
-                      const SizedBox(height: AppSizes.md),
-                      const Text(
-                        'Multi-Agent Analysis',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: AppSizes.xs),
-                      Text(
-                        controller.processingMessage,
-                        style: const TextStyle(color: Colors.white70, fontSize: 14),
-                      ),
+                      const Text('AI WORKSPACE', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+                      const SizedBox(height: AppSizes.sm),
+                      const Text('Multi-Agent Analysis', style: TextStyle(color: Colors.white, fontSize: 26, height: 1.08, fontWeight: FontWeight.w900, letterSpacing: -0.7)),
+                      const SizedBox(height: AppSizes.sm),
+                      Text(controller.processingMessage, style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.45, fontWeight: FontWeight.w600)),
                       const SizedBox(height: AppSizes.lg),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(999),
@@ -95,37 +78,20 @@ class _ProcessingScreenState extends State<ProcessingScreen> {
                   ),
                 ),
                 const SizedBox(height: AppSizes.xl),
-                Text(
-                  'Agent Pipeline',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                  ),
-                ),
+                Text('Agent Pipeline', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight)),
                 const SizedBox(height: AppSizes.md),
                 Expanded(
                   child: ListView.separated(
                     itemCount: controller.agentStatuses.length,
                     separatorBuilder: (_, index) => const SizedBox(height: AppSizes.md),
-                    itemBuilder: (context, index) {
-                      return AgentStatusCard(status: controller.agentStatuses[index]);
-                    },
+                    itemBuilder: (context, index) => AgentStatusCard(status: controller.agentStatuses[index]),
                   ),
                 ),
                 if (controller.error != null) ...[
                   const SizedBox(height: AppSizes.md),
-                  Text(
-                    controller.error!,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w700),
-                  ),
+                  Text(controller.error!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w700)),
                   const SizedBox(height: AppSizes.md),
-                  AppButton(
-                    text: 'Back to Scan',
-                    variant: AppButtonVariant.outline,
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
+                  AppButton(text: 'Back to Scan', variant: AppButtonVariant.outline, onPressed: () => Navigator.of(context).pop()),
                 ],
               ],
             ),
