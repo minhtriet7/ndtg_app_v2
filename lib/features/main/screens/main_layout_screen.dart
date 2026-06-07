@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
-import '../controllers/main_tab_controller.dart';
-import '../../home/screens/home_screen.dart';
-import '../../recognition/screens/scan_screen.dart';
-import '../../currency/screens/currency_converter_screen.dart';
+import '../../banknote_directory/screens/supported_banknotes_screen.dart';
 import '../../history/screens/history_screen.dart';
+import '../../home/screens/home_screen.dart';
 import '../../profile/screens/profile_screen.dart';
+import '../../recognition/screens/scan_screen.dart';
+import '../controllers/main_tab_controller.dart';
 
 class MainLayoutScreen extends StatelessWidget {
   const MainLayoutScreen({super.key});
@@ -32,24 +32,33 @@ class _MainLayoutView extends StatelessWidget {
     final screens = <Widget>[
       const HomeScreen(),
       const ScanScreen(),
-      const CurrencyConverterScreen(),
+      const SupportedBanknotesScreen(),
       const HistoryScreen(),
       const ProfileScreen(),
     ];
 
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(index: tabController.currentIndex, children: screens),
+      body: IndexedStack(
+        index: tabController.currentIndex,
+        children: screens,
+      ),
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(14, 0, 14, 12),
         child: Container(
           decoration: BoxDecoration(
-            color: isDark ? AppColors.cardDark.withOpacity(0.94) : Colors.white.withOpacity(0.96),
+            color: isDark
+                ? AppColors.cardDark.withOpacity(0.94)
+                : Colors.white.withOpacity(0.96),
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+            border: Border.all(
+              color: isDark ? AppColors.borderDark : AppColors.borderLight,
+            ),
             boxShadow: [
               BoxShadow(
-                color: isDark ? Colors.black.withOpacity(0.35) : AppColors.slate900.withOpacity(0.10),
+                color: isDark
+                    ? Colors.black.withOpacity(0.35)
+                    : AppColors.slate900.withOpacity(0.10),
                 blurRadius: 26,
                 offset: const Offset(0, 10),
               ),
@@ -61,8 +70,10 @@ class _MainLayoutView extends StatelessWidget {
               currentIndex: tabController.currentIndex,
               onTap: tabController.setIndex,
               backgroundColor: Colors.transparent,
-              selectedItemColor: isDark ? AppColors.primaryLightTeal : AppColors.primaryTeal,
-              unselectedItemColor: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+              selectedItemColor:
+              isDark ? AppColors.primaryLightTeal : AppColors.primaryTeal,
+              unselectedItemColor:
+              isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
               type: BottomNavigationBarType.fixed,
               elevation: 0,
               items: const [

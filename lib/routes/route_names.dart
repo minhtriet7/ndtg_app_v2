@@ -14,8 +14,10 @@ class RouteNames {
   static const String processing = '/scan/processing';
   static const String result = '/scan/result';
   static const String resultDetail = '/scan/result-detail';
+
   static const String history = '/history';
   static const String currency = '/currency';
+  static const String banknoteDirectory = '/banknotes';
   static const String profile = '/profile';
   static const String settings = '/settings';
   static const String userGuide = '/user-guide';

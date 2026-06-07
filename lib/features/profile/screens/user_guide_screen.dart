@@ -10,12 +10,21 @@ class UserGuideScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('User Guide')),
+      appBar: AppBar(
+        title: const Text('User Guide'),
+      ),
       body: ListView(
-        padding: const EdgeInsets.all(AppSizes.lg),
+        padding: const EdgeInsets.fromLTRB(
+          AppSizes.lg,
+          AppSizes.lg,
+          AppSizes.lg,
+          AppSizes.xxl,
+        ),
         children: const [
           _GuideHero(),
           SizedBox(height: AppSizes.lg),
+          _GuideSectionTitle(title: 'Recognition Workflow'),
+          SizedBox(height: AppSizes.md),
           _GuideStep(
             index: '01',
             icon: Icons.camera_alt_rounded,
@@ -29,7 +38,7 @@ class UserGuideScreen extends StatelessWidget {
             icon: Icons.document_scanner_rounded,
             title: 'Run the multi-agent AI pipeline',
             description:
-            'Each analysis can consume 1 token. BanknoteAI uses computer vision, language reasoning, visual search and an aggregator to reach a final result.',
+            'Each analysis consumes 1 token. BanknoteAI compares results from computer vision, language reasoning, visual search, and an aggregator.',
           ),
           SizedBox(height: AppSizes.md),
           _GuideStep(
@@ -37,11 +46,21 @@ class UserGuideScreen extends StatelessWidget {
             icon: Icons.fact_check_rounded,
             title: 'Review confidence and consensus',
             description:
-            'Check the final denomination, country, currency, confidence score and agent consensus. If the result is uncertain, scan again with better lighting.',
+            'Check country, denomination, confidence score, and agent consensus. If the result is uncertain, scan again with better lighting.',
           ),
+          SizedBox(height: AppSizes.xl),
+          _GuideSectionTitle(title: 'Wallet and Tools'),
           SizedBox(height: AppSizes.md),
           _GuideStep(
             index: '04',
+            icon: Icons.public_rounded,
+            title: 'Browse supported banknotes',
+            description:
+            'Use Directory to check supported Southeast Asian banknotes, denominations, currency codes, reference images, and recognition metadata.',
+          ),
+          SizedBox(height: AppSizes.md),
+          _GuideStep(
+            index: '05',
             icon: Icons.currency_exchange_rounded,
             title: 'Convert currencies using VND rates',
             description:
@@ -49,7 +68,7 @@ class UserGuideScreen extends StatelessWidget {
           ),
           SizedBox(height: AppSizes.md),
           _GuideStep(
-            index: '05',
+            index: '06',
             icon: Icons.payments_rounded,
             title: 'Top up tokens securely',
             description:
@@ -74,7 +93,14 @@ class _GuideHero extends StatelessWidget {
         padding: const EdgeInsets.all(AppSizes.lg),
         decoration: BoxDecoration(
           gradient: AppColors.tealGradient,
-          borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+          borderRadius: BorderRadius.circular(AppSizes.radiusXxl),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryTeal.withOpacity(0.22),
+              blurRadius: 28,
+              offset: const Offset(0, 14),
+            ),
+          ],
         ),
         child: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,11 +113,12 @@ class _GuideHero extends StatelessWidget {
                 color: Colors.white,
                 fontSize: 26,
                 fontWeight: FontWeight.w900,
+                letterSpacing: -0.6,
               ),
             ),
             SizedBox(height: AppSizes.sm),
             Text(
-              'Learn how to get accurate recognition results and manage tokens effectively.',
+              'Learn how to get accurate recognition results, manage tokens, and use BanknoteAI tools effectively.',
               style: TextStyle(
                 color: Colors.white70,
                 fontSize: 14,
@@ -101,6 +128,23 @@ class _GuideHero extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _GuideSectionTitle extends StatelessWidget {
+  final String title;
+
+  const _GuideSectionTitle({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+        fontWeight: FontWeight.w900,
+        letterSpacing: -0.4,
       ),
     );
   }
@@ -121,17 +165,22 @@ class _GuideStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return AppCard(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 54,
+            height: 54,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: AppColors.primaryTeal.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+              color: AppColors.primaryTeal.withOpacity(isDark ? 0.18 : 0.10),
+              borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+              border: Border.all(
+                color: AppColors.primaryTeal.withOpacity(0.12),
+              ),
             ),
             child: Icon(icon, color: AppColors.primaryTeal, size: 26),
           ),
@@ -141,21 +190,35 @@ class _GuideStep extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$index · $title',
+                  index,
                   style: const TextStyle(
+                    color: AppColors.primaryTeal,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
+                    letterSpacing: -0.2,
                   ),
                 ),
                 const SizedBox(height: AppSizes.xs),
                 Text(
                   description,
                   style: TextStyle(
-                    color: Theme.of(context).brightness == Brightness.dark
+                    color: isDark
                         ? AppColors.textSecondaryDark
                         : AppColors.textSecondaryLight,
                     height: 1.45,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],

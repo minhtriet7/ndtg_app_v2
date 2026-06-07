@@ -34,6 +34,10 @@ class ApiEndpoints {
   static const String currencyRates = '/currency/rates';
   static const String currencyConvert = '/currency/convert';
 
+  // Banknote directory
+  static const String banknotes = '/banknotes/';
+  static String banknoteDetail(String id) => '/banknotes/$id';
+
   // Token packages / payment
   static const String tokenPackages = '/payment/token-packages';
   static const String paymentCreate = '/payment/buy';

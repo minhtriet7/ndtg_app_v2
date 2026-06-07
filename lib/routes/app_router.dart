@@ -9,6 +9,7 @@ import '../features/auth/screens/forgot_password_screen.dart';
 import '../features/auth/screens/google_success_screen.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/register_screen.dart';
+import '../features/banknote_directory/screens/supported_banknotes_screen.dart';
 import '../features/feedback/screens/feedback_form_screen.dart';
 import '../features/feedback/screens/feedback_screen.dart';
 import '../features/main/screens/main_layout_screen.dart';
@@ -30,51 +31,83 @@ class AppRouter {
       case RouteNames.splash:
         page = const SplashScreen();
         break;
+
       case RouteNames.login:
         page = const LoginScreen();
         break;
+
       case RouteNames.register:
         page = const RegisterScreen();
         break;
+
       case RouteNames.forgotPassword:
         page = const ForgotPasswordScreen();
         break;
+
       case RouteNames.googleSuccess:
         page = GoogleSuccessScreen(arguments: settings.arguments);
         break;
+
       case RouteNames.main:
         page = const RouteGuard(child: MainLayoutScreen());
         break;
+
+      case RouteNames.banknoteDirectory:
+        page = const RouteGuard(child: SupportedBanknotesScreen());
+        break;
+
       case RouteNames.pricing:
         page = const RouteGuard(child: PricingScreen());
         break;
+
       case RouteNames.checkout:
         page = const RouteGuard(child: CheckoutScreen());
         break;
+
       case RouteNames.sepayCheckout:
         page = const RouteGuard(child: SepayCheckoutScreen());
         break;
+
       case RouteNames.transactions:
         page = const RouteGuard(child: TransactionsScreen());
         break;
+
       case RouteNames.feedback:
         page = const RouteGuard(child: FeedbackScreen());
         break;
+
       case RouteNames.feedbackForm:
         page = const RouteGuard(child: FeedbackFormScreen());
         break;
+
       case RouteNames.adminDashboard:
-        page = const RouteGuard(adminOnly: true, child: AdminDashboardScreen());
+        page = const RouteGuard(
+          adminOnly: true,
+          child: AdminDashboardScreen(),
+        );
         break;
+
       case RouteNames.adminPendingTransactions:
-        page = const RouteGuard(adminOnly: true, child: AdminPendingTransactionsScreen());
+        page = const RouteGuard(
+          adminOnly: true,
+          child: AdminPendingTransactionsScreen(),
+        );
         break;
+
       case RouteNames.adminPendingFeedback:
-        page = const RouteGuard(adminOnly: true, child: AdminPendingFeedbackScreen());
+        page = const RouteGuard(
+          adminOnly: true,
+          child: AdminPendingFeedbackScreen(),
+        );
         break;
+
       case RouteNames.adminSystemHealth:
-        page = const RouteGuard(adminOnly: true, child: AdminSystemHealthScreen());
+        page = const RouteGuard(
+          adminOnly: true,
+          child: AdminSystemHealthScreen(),
+        );
         break;
+
       default:
         page = _NotFoundRoute(routeName: settings.name ?? 'unknown');
     }
