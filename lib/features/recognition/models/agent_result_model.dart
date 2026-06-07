@@ -1,175 +1,172 @@
 import '../../../core/network/response_parser.dart';
-import '../../../core/utils/json_helper.dart';
-
-enum AgentStatus {
-  waiting,
-  processing,
-  success,
-  failed,
-  warning,
-}
 
 class AgentResultModel {
-  final String id;
   final String agentName;
-  final String displayName;
-  final AgentStatus status;
-  final double confidence;
+  final String status;
   final String summary;
-  final Map<String, dynamic> data;
+  final String country;
+  final String denomination;
+  final String currency;
+  final String method;
+  final double confidence;
+  final int? objectIndex;
+  final Map<String, dynamic> rawJson;
 
   const AgentResultModel({
-    required this.id,
     required this.agentName,
-    required this.displayName,
     required this.status,
-    required this.confidence,
     required this.summary,
-    required this.data,
+    required this.country,
+    required this.denomination,
+    required this.currency,
+    required this.method,
+    required this.confidence,
+    required this.objectIndex,
+    required this.rawJson,
   });
 
-  factory AgentResultModel.placeholder({
-    required String id,
-    required String displayName,
-    AgentStatus status = AgentStatus.waiting,
-  }) {
-    return AgentResultModel(
-      id: id,
-      agentName: id,
-      displayName: displayName,
-      status: status,
-      confidence: 0,
-      summary: 'Waiting for this agent to report.',
-      data: const {},
-    );
-  }
-
   factory AgentResultModel.fromJson(dynamic raw) {
-    final json = JsonHelper.safeMap(raw);
-    final name = JsonHelper.safeString(
-      ResponseParser.getValue(
-        json,
-        ['agent', 'agent_name', 'name', 'key', 'module'],
-      ),
-      fallback: 'unknown_agent',
+    final json = ResponseParser.parseMap(raw);
+    final data = ResponseParser.parseMap(
+      json['data'] ?? json['result'] ?? json['raw'] ?? json,
     );
 
-    final resultData = JsonHelper.safeMap(
-      ResponseParser.getValue(json, ['data', 'result', 'output', 'payload']),
-    );
+    final denomination = _firstClean([
+      ResponseParser.getValue(json, ['denomination']),
+      ResponseParser.getValue(data, ['menh_gia']),
+      ResponseParser.getValue(data, ['denomination']),
+      ResponseParser.getValue(data, ['final_denomination']),
+      ResponseParser.getValue(data, ['result']),
+    ]);
 
-    final confidenceRaw = ResponseParser.getValue(
-      json,
-      ['confidence', 'score', 'data.confidence', 'result.confidence'],
-      defaultValue: resultData['confidence'] ?? resultData['score'] ?? 0,
-    );
+    final country = _firstClean([
+      ResponseParser.getValue(json, ['country']),
+      ResponseParser.getValue(data, ['quoc_gia']),
+      ResponseParser.getValue(data, ['country']),
+    ]);
+
+    final currency = _firstClean([
+      ResponseParser.getValue(json, ['currency']),
+      ResponseParser.getValue(data, ['currency']),
+      ResponseParser.getValue(data, ['loai_tien']),
+      _currencyFromDenomination(denomination),
+    ]);
 
     return AgentResultModel(
-      id: name.toLowerCase().replaceAll(' ', '_'),
-      agentName: name,
-      displayName: _formatAgentName(name),
-      status: parseStatus(
-        JsonHelper.safeString(
-          ResponseParser.getValue(json, ['status', 'state']),
-          fallback: 'success',
-        ),
+      agentName: _normalizeAgentName(
+        _firstClean([
+          ResponseParser.getValue(json, ['agent']),
+          ResponseParser.getValue(json, ['agent_name']),
+          ResponseParser.getValue(data, ['agent']),
+          ResponseParser.getValue(data, ['provider']),
+        ], fallback: 'AI Agent'),
       ),
-      confidence: JsonHelper.safeDouble(confidenceRaw),
-      summary: JsonHelper.safeString(
-        ResponseParser.getValue(
-          json,
-          ['summary', 'message', 'description', 'data.summary', 'result.summary'],
-        ),
-        fallback: _buildFallbackSummary(resultData),
+      status: _firstClean([
+        ResponseParser.getValue(json, ['status']),
+        ResponseParser.getValue(data, ['status']),
+      ], fallback: 'waiting'),
+      summary: _firstClean([
+        ResponseParser.getValue(json, ['summary']),
+        ResponseParser.getValue(data, ['mo_ta']),
+        ResponseParser.getValue(data, ['description']),
+        ResponseParser.getValue(data, ['quan_diem']),
+        ResponseParser.getValue(data, ['message']),
+        denomination.isNotEmpty || country.isNotEmpty
+            ? '$country $denomination'.trim()
+            : null,
+      ], fallback: 'Waiting for analysis result.'),
+      country: country,
+      denomination: denomination,
+      currency: currency,
+      method: _firstClean([
+        ResponseParser.getValue(data, ['method']),
+        ResponseParser.getValue(data, ['phuong_phap']),
+        ResponseParser.getValue(json, ['method']),
+      ]),
+      confidence: _asDouble(
+        _firstClean([
+          ResponseParser.getValue(data, ['do_tin_cay']),
+          ResponseParser.getValue(data, ['confidence']),
+          ResponseParser.getValue(json, ['confidence']),
+        ], fallback: '0'),
       ),
-      data: resultData.isNotEmpty ? resultData : json,
+      objectIndex: _asNullableInt(
+        _firstClean([
+          ResponseParser.getValue(json, ['object_index']),
+          ResponseParser.getValue(data, ['object_index']),
+        ]),
+      ),
+      rawJson: json,
     );
   }
 
-  static String _formatAgentName(String name) {
-    final lower = name.toLowerCase();
-
-    if (lower.contains('yolo') || lower.contains('model') || lower.contains('agent_1')) {
-      return 'YOLO / Vision Agent';
-    }
-
-    if (lower.contains('llm') || lower.contains('gemini') || lower.contains('agent_2')) {
-      return 'Gemini LLM Agent';
-    }
-
-    if (lower.contains('lens') || lower.contains('serp') || lower.contains('agent_3')) {
-      return 'Google Lens Agent';
-    }
-
-    if (lower.contains('aggregator') || lower.contains('vote')) {
-      return 'Aggregator';
-    }
-
-    return name
-        .replaceAll('_', ' ')
-        .split(' ')
-        .where((part) => part.trim().isNotEmpty)
-        .map((part) => part[0].toUpperCase() + part.substring(1))
-        .join(' ');
+  String get displayResult {
+    final parts = [
+      if (country.trim().isNotEmpty) country,
+      if (denomination.trim().isNotEmpty) denomination,
+    ];
+    return parts.isEmpty ? summary : parts.join(' · ');
   }
 
-  static String _buildFallbackSummary(Map<String, dynamic> data) {
-    if (data.isEmpty) return 'Agent completed without additional summary.';
+  static String _normalizeAgentName(String value) {
+    final text = value.toLowerCase();
 
-    final denomination = data['denomination'] ?? data['menh_gia'] ?? data['final_denomination'];
-    final currency = data['currency'] ?? data['loai_tien'];
-    final country = data['country'] ?? data['quoc_gia'];
+    if (text.contains('yolo') || text.contains('ml')) return 'ML/DL Agent';
+    if (text.contains('llm') || text.contains('gemini')) return 'LLM Agent';
+    if (text.contains('lens') || text.contains('visual') || text.contains('serp')) {
+      return 'Visual Search';
+    }
+    if (text.contains('aggregator')) return 'Aggregator';
 
-    final parts = [
-      if (denomination != null) denomination.toString(),
-      if (currency != null) currency.toString(),
-      if (country != null) country.toString(),
+    return value;
+  }
+
+  static String _firstClean(List<dynamic> values, {String fallback = ''}) {
+    for (final value in values) {
+      if (value == null) continue;
+      final text = value.toString().trim();
+      if (text.isEmpty) continue;
+      if (text.toLowerCase() == 'null') continue;
+      return text;
+    }
+    return fallback;
+  }
+
+  static double _asDouble(dynamic value) {
+    if (value == null) return 0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    return double.tryParse(value.toString()) ?? 0;
+  }
+
+  static int? _asNullableInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is double) return value.round();
+    return int.tryParse(value.toString());
+  }
+
+  static String _currencyFromDenomination(String value) {
+    final text = value.toUpperCase();
+
+    const codes = [
+      'VND',
+      'MYR',
+      'THB',
+      'IDR',
+      'SGD',
+      'PHP',
+      'KHR',
+      'LAK',
+      'MMK',
+      'BND',
+      'USD',
     ];
 
-    if (parts.isEmpty) return 'Agent returned structured data.';
-    return parts.join(' • ');
-  }
-
-  static AgentStatus parseStatus(String value) {
-    final normalized = value.toLowerCase().trim();
-
-    if (['success', 'completed', 'done', 'ok'].contains(normalized)) {
-      return AgentStatus.success;
+    for (final code in codes) {
+      if (RegExp('\\b$code\\b').hasMatch(text)) return code;
     }
 
-    if (['processing', 'running', 'in_progress'].contains(normalized)) {
-      return AgentStatus.processing;
-    }
-
-    if (['failed', 'error', 'failure'].contains(normalized)) {
-      return AgentStatus.failed;
-    }
-
-    if (['warning', 'needs_review', 'partial'].contains(normalized)) {
-      return AgentStatus.warning;
-    }
-
-    return AgentStatus.waiting;
-  }
-
-  String get statusLabel {
-    switch (status) {
-      case AgentStatus.success:
-        return 'Success';
-      case AgentStatus.processing:
-        return 'Processing';
-      case AgentStatus.failed:
-        return 'Failed';
-      case AgentStatus.warning:
-        return 'Review';
-      case AgentStatus.waiting:
-        return 'Waiting';
-    }
-  }
-
-  double get normalizedConfidence {
-    if (confidence > 1) return confidence / 100;
-    if (confidence < 0) return 0;
-    return confidence;
+    return '';
   }
 }
