@@ -34,7 +34,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.user.fullName);
-    _phoneController = TextEditingController();
+    _phoneController = TextEditingController(text: widget.user.phone);
     _avatarController = TextEditingController(text: widget.user.avatarUrl);
   }
 
@@ -52,6 +52,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final controller = context.read<ProfileController>();
+
     final success = await controller.updateProfile(
       fullName: _nameController.text.trim(),
       phone: _phoneController.text.trim(),
@@ -68,19 +69,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(true);
       return;
     }
 
-    if (controller.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(controller.error!),
-          backgroundColor: AppColors.danger,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(controller.error ?? 'Unable to update your profile.'),
+        backgroundColor: AppColors.danger,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -106,6 +105,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _ProfileEditHero(
                 user: widget.user,
                 avatarUrlController: _avatarController,
+                nameController: _nameController,
               ),
               const SizedBox(height: AppSizes.lg),
               AppCard(
@@ -166,7 +166,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         text: 'Save Changes',
                         icon: Icons.save_rounded,
                         isLoading: isSaving,
-                        onPressed: _save,
+                        onPressed: isSaving ? null : _save,
                       ),
                     ],
                   ),
@@ -183,10 +183,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 class _ProfileEditHero extends StatelessWidget {
   final UserModel user;
   final TextEditingController avatarUrlController;
+  final TextEditingController nameController;
 
   const _ProfileEditHero({
     required this.user,
     required this.avatarUrlController,
+    required this.nameController,
   });
 
   @override
@@ -254,41 +256,50 @@ class _ProfileEditHero extends StatelessWidget {
             ),
             const SizedBox(width: AppSizes.md),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'BanknoteAI Profile',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    user.fullName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    user.email,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+              child: AnimatedBuilder(
+                animation: nameController,
+                builder: (context, _) {
+                  final displayName = nameController.text.trim().isEmpty
+                      ? user.fullName
+                      : nameController.text.trim();
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'BanknoteAI Profile',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        displayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        user.email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ],

@@ -7,55 +7,98 @@ import '../../../core/widgets/app_badge.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/network_image_view.dart';
 import '../../recognition/models/banknote_result_model.dart';
+import '../../recognition/models/final_result_model.dart';
 import '../../recognition/screens/result_detail_screen.dart';
 
 class HistoryItemCard extends StatelessWidget {
   final BanknoteResultModel result;
 
-  const HistoryItemCard({super.key, required this.result});
+  const HistoryItemCard({
+    super.key,
+    required this.result,
+  });
 
   BadgeStatus _badgeStatus(String status) {
     final normalized = status.toLowerCase();
-    if (normalized == 'completed' || normalized == 'success' || normalized == 'done') return BadgeStatus.success;
-    if (normalized == 'failed' || normalized == 'error') return BadgeStatus.error;
-    if (normalized == 'needs_review' || normalized == 'review') return BadgeStatus.warning;
+
+    if (normalized.contains('completed') ||
+        normalized.contains('success') ||
+        normalized.contains('done')) {
+      return BadgeStatus.success;
+    }
+
+    if (normalized.contains('failed') || normalized.contains('error')) {
+      return BadgeStatus.error;
+    }
+
+    if (normalized.contains('needs_review') ||
+        normalized.contains('review') ||
+        normalized.contains('warning') ||
+        normalized.contains('conflict')) {
+      return BadgeStatus.warning;
+    }
+
     return BadgeStatus.info;
   }
 
   String get _title {
     final denomination = result.finalResult.denomination.trim();
     final currency = result.finalResult.currency.trim();
-    if (denomination.toLowerCase() == 'unknown' && currency.toLowerCase() == 'unknown') return 'Unknown banknote';
-    return [denomination, currency].where((item) => item.isNotEmpty).join(' ');
+
+    if (denomination.toLowerCase() == 'unknown' &&
+        currency.toLowerCase() == 'unknown') {
+      return 'Unknown banknote';
+    }
+
+    return FinalResultModel.formatMoneyLabel(denomination, currency);
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final consensusText = result.finalResult.matchedAgents.trim().isNotEmpty
         ? result.finalResult.matchedAgents
         : 'Consensus N/A';
 
+    final country = result.finalResult.country.trim().isEmpty ||
+        result.finalResult.country.toLowerCase() == 'unknown'
+        ? 'Country not confirmed'
+        : result.finalResult.country;
+
     return AppCard(
       onTap: () {
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => ResultDetailScreen(result: result)));
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ResultDetailScreen(result: result),
+          ),
+        );
       },
       padding: const EdgeInsets.all(AppSizes.md),
       child: Row(
         children: [
           Container(
-            width: 70,
-            height: 70,
+            width: 74,
+            height: 74,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-              border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+              border: Border.all(
+                color: isDark ? AppColors.borderDark : AppColors.borderLight,
+              ),
             ),
             clipBehavior: Clip.antiAlias,
             child: result.imageUrl.isNotEmpty
-                ? NetworkImageView(imageUrl: result.imageUrl, borderRadius: AppSizes.radiusLg, fit: BoxFit.cover)
+                ? NetworkImageView(
+              imageUrl: result.imageUrl,
+              borderRadius: AppSizes.radiusLg,
+              fit: BoxFit.cover,
+            )
                 : Container(
               color: AppColors.primaryTeal.withOpacity(0.08),
-              child: const Icon(Icons.account_balance_rounded, color: AppColors.primaryTeal),
+              child: const Icon(
+                Icons.account_balance_rounded,
+                color: AppColors.primaryTeal,
+              ),
             ),
           ),
           const SizedBox(width: AppSizes.md),
@@ -71,7 +114,9 @@ class HistoryItemCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                          color: isDark
+                              ? AppColors.textPrimaryDark
+                              : AppColors.textPrimaryLight,
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.2,
@@ -79,16 +124,21 @@ class HistoryItemCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: AppSizes.sm),
-                    AppBadge(text: result.status.replaceAll('_', ' '), status: _badgeStatus(result.status)),
+                    AppBadge(
+                      text: result.status.replaceAll('_', ' '),
+                      status: _badgeStatus(result.status),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  result.finalResult.country.isEmpty ? 'Country not confirmed' : result.finalResult.country,
+                  country,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
@@ -96,7 +146,7 @@ class HistoryItemCard extends StatelessWidget {
                 const SizedBox(height: AppSizes.sm),
                 Row(
                   children: [
-                    _TinyMetric(label: '', value: consensusText),
+                    _TinyMetric(value: consensusText),
                     const SizedBox(width: AppSizes.sm),
                     Expanded(
                       child: Text(
@@ -104,8 +154,22 @@ class HistoryItemCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.right,
-                        style: TextStyle(color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight, fontSize: 12),
+                        style: TextStyle(
+                          color: isDark
+                              ? AppColors.textMutedDark
+                              : AppColors.textMutedLight,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 20,
+                      color: isDark
+                          ? AppColors.textMutedDark
+                          : AppColors.textMutedLight,
                     ),
                   ],
                 ),
@@ -119,10 +183,9 @@ class HistoryItemCard extends StatelessWidget {
 }
 
 class _TinyMetric extends StatelessWidget {
-  final String label;
   final String value;
 
-  const _TinyMetric({required this.label, required this.value});
+  const _TinyMetric({required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -134,8 +197,12 @@ class _TinyMetric extends StatelessWidget {
         border: Border.all(color: AppColors.success.withOpacity(0.18)),
       ),
       child: Text(
-        label.isEmpty ? value : '$label $value',
-        style: const TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.w900),
+        value,
+        style: const TextStyle(
+          color: AppColors.success,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+        ),
       ),
     );
   }

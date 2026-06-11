@@ -61,7 +61,8 @@ class BanknoteResultModel {
             'denomination': item['denomination'],
             'country': item['country'],
             'currency': item['currency'],
-            'summary': 'Object #${item['object_index'] ?? ''}: ${item['country'] ?? ''} ${item['denomination'] ?? ''}',
+            'summary':
+            'Object #${item['object_index'] ?? ''}: ${item['country'] ?? ''} ${item['denomination'] ?? ''}',
             'object_index': item['object_index'],
           }),
         );
@@ -87,11 +88,126 @@ class BanknoteResultModel {
         ],
         defaultValue: '',
       ).toString(),
-      createdAt: ResponseParser.getValue(data, ['created_at', 'createdAt'], defaultValue: '').toString(),
-      updatedAt: ResponseParser.getValue(data, ['updated_at', 'updatedAt'], defaultValue: '').toString(),
+      createdAt: ResponseParser.getValue(
+        data,
+        ['created_at', 'createdAt'],
+        defaultValue: '',
+      ).toString(),
+      updatedAt: ResponseParser.getValue(
+        data,
+        ['updated_at', 'updatedAt'],
+        defaultValue: '',
+      ).toString(),
       finalResult: finalResult,
       agentResults: agents,
       rawJson: data,
     );
+  }
+
+  Map<String, dynamic> get tokenUsage {
+    final usage = ResponseParser.getValue(
+      rawJson,
+      [
+        'token_usage',
+        'tokenUsage',
+        'billing',
+        'billing_info',
+        'usage',
+      ],
+      defaultValue: const {},
+    );
+
+    return ResponseParser.parseMap(usage);
+  }
+
+  int get tokensCharged {
+    return _asInt(
+      ResponseParser.getValue(
+        tokenUsage,
+        [
+          'tokens_charged',
+          'charged_tokens',
+          'token_charged',
+          'tokens',
+          'charged',
+        ],
+        defaultValue: 0,
+      ),
+    );
+  }
+
+  int get balanceBefore {
+    return _asInt(
+      ResponseParser.getValue(
+        tokenUsage,
+        ['balance_before', 'before_balance', 'token_balance_before'],
+        defaultValue: 0,
+      ),
+    );
+  }
+
+  int get balanceAfter {
+    return _asInt(
+      ResponseParser.getValue(
+        tokenUsage,
+        ['balance_after', 'after_balance', 'token_balance_after'],
+        defaultValue: 0,
+      ),
+    );
+  }
+
+  int get inputTokens {
+    return _asInt(
+      ResponseParser.getValue(
+        tokenUsage,
+        ['input_tokens', 'prompt_tokens'],
+        defaultValue: 0,
+      ),
+    );
+  }
+
+  int get outputTokens {
+    return _asInt(
+      ResponseParser.getValue(
+        tokenUsage,
+        ['output_tokens', 'completion_tokens'],
+        defaultValue: 0,
+      ),
+    );
+  }
+
+  int get aiTokens {
+    return _asInt(
+      ResponseParser.getValue(
+        tokenUsage,
+        ['ai_tokens', 'total_ai_tokens', 'total_tokens'],
+        defaultValue: inputTokens + outputTokens,
+      ),
+    );
+  }
+
+  String get billingMode {
+    return ResponseParser.getValue(
+      tokenUsage,
+      ['billing_mode', 'mode'],
+      defaultValue: tokensCharged > 0 ? 'fixed' : 'n/a',
+    ).toString();
+  }
+
+  bool get hasTokenUsage {
+    return tokenUsage.isNotEmpty ||
+        tokensCharged > 0 ||
+        balanceBefore > 0 ||
+        balanceAfter > 0 ||
+        aiTokens > 0;
+  }
+
+  static int _asInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.round();
+
+    final text = value.toString().replaceAll(',', '').trim();
+    return int.tryParse(text) ?? 0;
   }
 }

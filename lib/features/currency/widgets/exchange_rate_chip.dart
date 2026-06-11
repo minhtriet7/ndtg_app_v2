@@ -8,18 +8,27 @@ import '../models/currency_rate_model.dart';
 class ExchangeRateChip extends StatelessWidget {
   final CurrencyRateModel rate;
 
-  const ExchangeRateChip({super.key, required this.rate});
+  const ExchangeRateChip({
+    super.key,
+    required this.rate,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = rate.isStale ? AppColors.warning : AppColors.primaryTeal;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: AppSizes.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.md,
+        vertical: AppSizes.sm,
+      ),
       decoration: BoxDecoration(
         color: isDark ? AppColors.bgDark : AppColors.bgLight,
         borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-        border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -27,8 +36,8 @@ class ExchangeRateChip extends StatelessWidget {
           Container(
             width: 8,
             height: 8,
-            decoration: const BoxDecoration(
-              color: AppColors.primaryTeal,
+            decoration: BoxDecoration(
+              color: color,
               shape: BoxShape.circle,
             ),
           ),
@@ -41,11 +50,15 @@ class ExchangeRateChip extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 6),
-          Text(
-            '= ${MoneyFormatter.formatVnd(rate.effectiveRateToVnd)}',
-            style: const TextStyle(
-              color: AppColors.primaryTeal,
-              fontWeight: FontWeight.w900,
+          Flexible(
+            child: Text(
+              '= ${MoneyFormatter.formatVnd(rate.effectiveRateToVnd)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
         ],

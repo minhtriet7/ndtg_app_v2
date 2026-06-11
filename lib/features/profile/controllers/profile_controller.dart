@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/constants/storage_keys.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/storage/local_storage.dart';
 import '../../../core/storage/secure_storage.dart';
-import '../../../core/constants/storage_keys.dart';
 import '../../../routes/route_names.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../data/profile_service.dart';
@@ -24,6 +24,8 @@ class ProfileController extends ChangeNotifier {
   UserModel? get profile => _profile;
 
   Future<void> fetchProfile() async {
+    if (_isLoading) return;
+
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -43,6 +45,8 @@ class ProfileController extends ChangeNotifier {
     String? phone,
     String? avatarUrl,
   }) async {
+    if (_isSaving) return false;
+
     _isSaving = true;
     _error = null;
     notifyListeners();
@@ -74,14 +78,16 @@ class ProfileController extends ChangeNotifier {
     }
 
     if (context.mounted) {
-      Navigator.of(context).pushNamedAndRemoveUntil(RouteNames.login, (route) => false);
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        RouteNames.login,
+            (route) => false,
+      );
     }
   }
 
   void clearError() {
-    if (_error != null) {
-      _error = null;
-      notifyListeners();
-    }
+    if (_error == null) return;
+    _error = null;
+    notifyListeners();
   }
 }

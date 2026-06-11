@@ -20,17 +20,17 @@ class QuickConvertCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final vnd = amount * rate.effectiveRateToVnd;
-    final surfaceColor = isDark ? AppColors.cardDark : Colors.white;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     final mutedColor = isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
-    final secondaryColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final secondaryColor =
+    isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 
     return AppCard(
       padding: EdgeInsets.zero,
       child: Container(
         padding: const EdgeInsets.all(AppSizes.md),
         decoration: BoxDecoration(
-          color: surfaceColor,
+          color: isDark ? AppColors.cardDark : Colors.white,
           borderRadius: BorderRadius.circular(AppSizes.radiusXl),
           border: Border.all(
             color: isDark ? AppColors.borderDark : AppColors.borderLight,
@@ -42,11 +42,13 @@ class QuickConvertCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  width: 34,
-                  height: 34,
+                  width: 36,
+                  height: 36,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: AppColors.primaryTeal.withOpacity(0.10),
+                    color: AppColors.primaryTeal.withOpacity(
+                      isDark ? 0.16 : 0.10,
+                    ),
                     borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                   ),
                   child: Text(
@@ -67,11 +69,17 @@ class QuickConvertCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: textColor,
-                      fontSize: 14,
+                      fontSize: 15,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
                 ),
+                if (rate.isStale)
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    color: AppColors.warning,
+                    size: 18,
+                  ),
               ],
             ),
             const SizedBox(height: AppSizes.md),

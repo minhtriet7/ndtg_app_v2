@@ -43,7 +43,10 @@ class TokenInfoCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Icon(Icons.generating_tokens_rounded, color: Colors.white),
+                child: const Icon(
+                  Icons.generating_tokens_rounded,
+                  color: Colors.white,
+                ),
               ),
               const SizedBox(width: AppSizes.md),
               Expanded(
@@ -53,7 +56,9 @@ class TokenInfoCard extends StatelessWidget {
                     Text(
                       'Token Wallet',
                       style: TextStyle(
-                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimaryLight,
                         fontSize: 17,
                         fontWeight: FontWeight.w900,
                       ),
@@ -62,7 +67,9 @@ class TokenInfoCard extends StatelessWidget {
                     Text(
                       'Multi-agent scan credits',
                       style: TextStyle(
-                        color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+                        color: isDark
+                            ? AppColors.textMutedDark
+                            : AppColors.textMutedLight,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -109,7 +116,9 @@ class TokenInfoCard extends StatelessWidget {
           Text(
             'Each successful recognition consumes 1 token. Top up when your balance is low.',
             style: TextStyle(
-              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
               height: 1.45,
               fontWeight: FontWeight.w600,
             ),
@@ -118,14 +127,16 @@ class TokenInfoCard extends StatelessWidget {
           LayoutBuilder(
             builder: (context, constraints) {
               final compact = constraints.maxWidth < 310;
+
               final topUp = AppButton(
                 text: 'Top Up',
                 icon: Icons.add_card_rounded,
                 onPressed: onTopUp,
               );
+
               final transactions = AppButton(
                 text: 'Transactions',
-                type: ButtonType.outline,
+                type: AppButtonType.outline,
                 icon: Icons.receipt_long_rounded,
                 onPressed: onTransactions,
               );

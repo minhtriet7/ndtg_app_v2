@@ -57,15 +57,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(AppSizes.lg, AppSizes.md, AppSizes.lg, 0),
+              padding: const EdgeInsets.fromLTRB(
+                AppSizes.lg,
+                AppSizes.md,
+                AppSizes.lg,
+                0,
+              ),
               sliver: SliverToBoxAdapter(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _HistoryHero(
-                      total: controller.historyList.length,
+                      total: controller.totalScans,
+                      completed: controller.completedCount,
+                      review: controller.reviewCount,
                       isDark: isDark,
-                      onToggleFilter: () => setState(() => _showFilters = !_showFilters),
+                      onToggleFilter: () {
+                        setState(() => _showFilters = !_showFilters);
+                      },
                     ),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 220),
@@ -94,7 +103,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            'Recent recognition results',
+                            controller.hasActiveFilters
+                                ? 'Filtered recognition results'
+                                : 'Recent recognition results',
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.w900,
                               letterSpacing: -0.4,
@@ -102,7 +113,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                         ),
                         AppBadge(
-                          text: '${controller.historyList.length} scans',
+                          text: controller.hasActiveFilters
+                              ? '${controller.filteredScans}/${controller.totalScans}'
+                              : '${controller.totalScans} scans',
                           status: BadgeStatus.info,
                           uppercase: false,
                         ),
@@ -128,24 +141,57 @@ class _HistoryScreenState extends State<HistoryScreen> {
             else if (controller.error != null && controller.historyList.isEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
-                child: ErrorState(message: controller.error!, onRetry: controller.fetchHistory),
+                child: ErrorState(
+                  message: controller.error!,
+                  onRetry: controller.fetchHistory,
+                ),
               )
             else if (controller.historyList.isEmpty)
-                const SliverFillRemaining(
+                SliverFillRemaining(
                   hasScrollBody: false,
-                  child: EmptyState(
-                    title: 'No scans yet',
-                    message: 'Start a scan and BanknoteAI will save the final result here.',
-                    icon: Icons.history_rounded,
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSizes.lg),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        EmptyState(
+                          title: controller.hasActiveFilters
+                              ? 'No matching scans'
+                              : 'No scans yet',
+                          message: controller.hasActiveFilters
+                              ? 'Try changing your search or reset filters.'
+                              : 'Start a scan and BanknoteAI will save the final result here.',
+                          icon: Icons.history_rounded,
+                        ),
+                        if (controller.hasActiveFilters) ...[
+                          const SizedBox(height: AppSizes.md),
+                          SizedBox(
+                            height: 48,
+                            child: OutlinedButton.icon(
+                              onPressed: controller.clearFilters,
+                              icon: const Icon(Icons.refresh_rounded),
+                              label: const Text('Reset filters'),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(AppSizes.lg, 0, AppSizes.lg, 112),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSizes.lg,
+                    0,
+                    AppSizes.lg,
+                    112,
+                  ),
                   sliver: SliverList.separated(
                     itemCount: controller.historyList.length,
                     separatorBuilder: (_, __) => const SizedBox(height: AppSizes.md),
-                    itemBuilder: (context, index) => HistoryItemCard(result: controller.historyList[index]),
+                    itemBuilder: (context, index) {
+                      return HistoryItemCard(result: controller.historyList[index]);
+                    },
                   ),
                 ),
           ],
@@ -157,11 +203,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
 class _HistoryHero extends StatelessWidget {
   final int total;
+  final int completed;
+  final int review;
   final bool isDark;
   final VoidCallback onToggleFilter;
 
   const _HistoryHero({
     required this.total,
+    required this.completed,
+    required this.review,
     required this.isDark,
     required this.onToggleFilter,
   });
@@ -197,15 +247,25 @@ class _HistoryHero extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppSizes.radiusLg),
                     border: Border.all(color: Colors.white.withOpacity(0.22)),
                   ),
-                  child: const Icon(Icons.receipt_long_rounded, color: Colors.white),
+                  child: const Icon(
+                    Icons.receipt_long_rounded,
+                    color: Colors.white,
+                  ),
                 ),
                 const Spacer(),
                 TextButton.icon(
                   onPressed: onToggleFilter,
-                  icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 18),
+                  icon: const Icon(
+                    Icons.tune_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                   label: const Text(
                     'Filters',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
               ],
@@ -224,23 +284,68 @@ class _HistoryHero extends StatelessWidget {
             const SizedBox(height: AppSizes.sm),
             const Text(
               'Review saved outputs, confidence, status, and complete multi-agent details.',
-              style: TextStyle(color: Colors.white70, height: 1.45, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: Colors.white70,
+                height: 1.45,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: AppSizes.lg),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: AppSizes.sm),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.14),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: Colors.white.withOpacity(0.20)),
-              ),
-              child: Text(
-                '$total total scans',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
-              ),
+            Row(
+              children: [
+                Expanded(child: _HeroMetric(label: 'Total', value: '$total')),
+                const SizedBox(width: AppSizes.sm),
+                Expanded(child: _HeroMetric(label: 'Completed', value: '$completed')),
+                const SizedBox(width: AppSizes.sm),
+                Expanded(child: _HeroMetric(label: 'Review', value: '$review')),
+              ],
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _HeroMetric extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _HeroMetric({
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.md),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.14),
+        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+        border: Border.all(color: Colors.white.withOpacity(0.20)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
       ),
     );
   }

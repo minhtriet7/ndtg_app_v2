@@ -20,16 +20,19 @@ class CurrencyConverterScreen extends StatefulWidget {
   const CurrencyConverterScreen({super.key});
 
   @override
-  State<CurrencyConverterScreen> createState() => _CurrencyConverterScreenState();
+  State<CurrencyConverterScreen> createState() =>
+      _CurrencyConverterScreenState();
 }
 
 class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
-  final TextEditingController _amountController = TextEditingController(text: '1');
+  final TextEditingController _amountController =
+  TextEditingController(text: '1');
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<CurrencyController>().fetchRates();
     });
   }
@@ -61,11 +64,15 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
         child: controller.isLoading && controller.rates.isEmpty
             ? const _CurrencyLoading()
             : controller.error != null && controller.rates.isEmpty
-            ? ErrorState(message: controller.error!, onRetry: controller.fetchRates)
+            ? ErrorState(
+          message: controller.error!,
+          onRetry: controller.fetchRates,
+        )
             : controller.rates.isEmpty
             ? const EmptyState(
           title: 'No exchange rates',
-          message: 'No active currency rates are available. Please try again later.',
+          message:
+          'No active currency rates are available. Please try again later.',
           icon: Icons.currency_exchange_rounded,
         )
             : _CurrencyContent(
@@ -96,11 +103,35 @@ class _CurrencyContent extends StatelessWidget {
         AppSizes.lg,
         AppSizes.md,
         AppSizes.lg,
-        AppSizes.xxl,
+        116,
       ),
       children: [
         _CurrencyHero(controller: controller),
         const SizedBox(height: AppSizes.lg),
+        if (controller.error != null) ...[
+          AppCard(
+            backgroundColor: AppColors.warning.withOpacity(0.08),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.info_outline_rounded,
+                  color: AppColors.warning,
+                ),
+                const SizedBox(width: AppSizes.md),
+                Expanded(
+                  child: Text(
+                    controller.error!,
+                    style: const TextStyle(
+                      color: AppColors.warning,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSizes.lg),
+        ],
         AppCard(
           padding: const EdgeInsets.all(AppSizes.lg),
           child: Column(
@@ -112,7 +143,9 @@ class _CurrencyContent extends StatelessWidget {
                     width: 42,
                     height: 42,
                     decoration: BoxDecoration(
-                      color: AppColors.primaryTeal.withOpacity(isDark ? 0.18 : 0.10),
+                      color: AppColors.primaryTeal.withOpacity(
+                        isDark ? 0.18 : 0.10,
+                      ),
                       borderRadius: BorderRadius.circular(AppSizes.radiusLg),
                     ),
                     child: const Icon(
@@ -129,7 +162,9 @@ class _CurrencyContent extends StatelessWidget {
                         Text(
                           'Exchange calculator',
                           style: TextStyle(
-                            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                            color: isDark
+                                ? AppColors.textPrimaryDark
+                                : AppColors.textPrimaryLight,
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
                             letterSpacing: -0.3,
@@ -137,9 +172,11 @@ class _CurrencyContent extends StatelessWidget {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          'Rates are maintained by the BanknoteAI backend.',
+                          'Backend rate first, local VND-based fallback if unavailable.',
                           style: TextStyle(
-                            color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+                            color: isDark
+                                ? AppColors.textMutedDark
+                                : AppColors.textMutedLight,
                             fontSize: 12.5,
                             fontWeight: FontWeight.w600,
                           ),
@@ -171,13 +208,18 @@ class _CurrencyContent extends StatelessWidget {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primaryTeal.withOpacity(isDark ? 0.12 : 0.25),
+                          color: AppColors.primaryTeal.withOpacity(
+                            isDark ? 0.12 : 0.25,
+                          ),
                           blurRadius: 18,
                           offset: const Offset(0, 8),
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.swap_vert_rounded, color: Colors.white),
+                    child: const Icon(
+                      Icons.swap_vert_rounded,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
@@ -194,11 +236,28 @@ class _CurrencyContent extends StatelessWidget {
                 readOnly: true,
               ),
               const SizedBox(height: AppSizes.lg),
-              AppButton(
-                text: controller.isConverting ? 'Converting...' : 'Convert with backend',
-                icon: Icons.calculate_rounded,
-                isLoading: controller.isConverting,
-                onPressed: controller.convertWithBackend,
+              Row(
+                children: [
+                  Expanded(
+                    child: AppButton(
+                      text: controller.isConverting
+                          ? 'Converting...'
+                          : 'Convert',
+                      icon: Icons.calculate_rounded,
+                      isLoading: controller.isConverting,
+                      onPressed: controller.convertWithBackend,
+                    ),
+                  ),
+                  const SizedBox(width: AppSizes.md),
+                  SizedBox(
+                    width: 56,
+                    height: 52,
+                    child: OutlinedButton(
+                      onPressed: controller.swapCurrencies,
+                      child: const Icon(Icons.swap_horiz_rounded),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -212,7 +271,9 @@ class _CurrencyContent extends StatelessWidget {
               child: Text(
                 'Quick conversions to VND',
                 style: TextStyle(
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.3,
@@ -284,7 +345,11 @@ class _CurrencyHero extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppSizes.radiusLg),
                     border: Border.all(color: Colors.white.withOpacity(0.24)),
                   ),
-                  child: const Icon(Icons.trending_up_rounded, color: Colors.white, size: 28),
+                  child: const Icon(
+                    Icons.trending_up_rounded,
+                    color: Colors.white,
+                    size: 28,
+                  ),
                 ),
                 const SizedBox(width: AppSizes.md),
                 const Expanded(
@@ -338,6 +403,13 @@ class _CurrencyHero extends StatelessWidget {
                       value: 'VND',
                     ),
                   ),
+                  Container(width: 1, height: 38, color: Colors.white24),
+                  Expanded(
+                    child: _HeroMetric(
+                      label: 'Status',
+                      value: controller.hasStaleRate ? 'Stale' : 'Fresh',
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -352,7 +424,10 @@ class _HeroMetric extends StatelessWidget {
   final String label;
   final String value;
 
-  const _HeroMetric({required this.label, required this.value});
+  const _HeroMetric({
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -365,7 +440,7 @@ class _HeroMetric extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.w900,
           ),
         ),
@@ -376,7 +451,7 @@ class _HeroMetric extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: Colors.white70,
-            fontSize: 11,
+            fontSize: 10.5,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -411,7 +486,9 @@ class _RateInfoPanel extends StatelessWidget {
                 child: Text(
                   'Rate intelligence',
                   style: TextStyle(
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                     fontSize: 17,
                     fontWeight: FontWeight.w900,
                   ),
@@ -438,17 +515,25 @@ class _RateInfoPanel extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.primaryTeal.withOpacity(isDark ? 0.14 : 0.08),
               borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-              border: Border.all(color: AppColors.primaryTeal.withOpacity(0.16)),
+              border: Border.all(
+                color: AppColors.primaryTeal.withOpacity(0.16),
+              ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.analytics_outlined, color: AppColors.primaryTeal, size: 20),
+                const Icon(
+                  Icons.analytics_outlined,
+                  color: AppColors.primaryTeal,
+                  size: 20,
+                ),
                 const SizedBox(width: AppSizes.sm),
                 Expanded(
                   child: Text(
                     '1 ${from.targetCurrency} = ${MoneyFormatter.formatCurrencyAmount(rate, to.targetCurrency)}',
                     style: TextStyle(
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                       fontWeight: FontWeight.w900,
                     ),
                   ),

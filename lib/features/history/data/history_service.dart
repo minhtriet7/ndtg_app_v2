@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import '../../../core/constants/api_endpoints.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/network/response_parser.dart';
@@ -6,58 +7,87 @@ import '../../recognition/models/banknote_result_model.dart';
 class HistoryService {
   final DioClient _client = DioClient();
 
-  Future<List<BanknoteResultModel>> getFullHistory({
-    String search = '',
-    String status = 'all',
-    String currency = 'all',
-    int limit = 100,
-  }) async {
-    // Backend exposes GET /users/me/history without filter query.
-    // Do filtering locally to avoid 400 Bad Request.
-    final response = await _client.get(ApiEndpoints.userHistory);
+  dynamic _unwrap(dynamic response) {
+    try {
+      final data = response.data;
+      if (data != null) return data;
+    } catch (_) {
+      // DioClient may already return raw normalized data.
+    }
 
-    final items = ResponseParser.parseList(response)
+    return response;
+  }
+
+  List<dynamic> _parseList(dynamic response) {
+    final payload = _unwrap(response);
+
+    if (payload is List) return payload;
+
+    final direct = ResponseParser.parseList(payload);
+    if (direct.isNotEmpty) return direct;
+
+    final map = ResponseParser.parseMap(payload);
+
+    for (final key in [
+      'data',
+      'items',
+      'results',
+      'history',
+      'recognitions',
+      'records',
+    ]) {
+      final value = map[key];
+
+      if (value is List) return value;
+
+      if (value is Map) {
+        for (final nestedKey in [
+          'data',
+          'items',
+          'results',
+          'history',
+          'recognitions',
+          'records',
+        ]) {
+          final nested = value[nestedKey];
+          if (nested is List) return nested;
+        }
+      }
+    }
+
+    return const [];
+  }
+
+  Future<List<BanknoteResultModel>> getFullHistory({int limit = 300}) async {
+    dynamic response;
+    try {
+      response = await _client.get(ApiEndpoints.userHistory);
+    } catch (e) {
+      rethrow;
+    }
+
+    final items = _parseList(response)
         .whereType<Map>()
         .map((item) => Map<String, dynamic>.from(item))
         .toList();
 
-    final keyword = search.trim().toLowerCase();
-    final normalizedStatus = status.toLowerCase();
-    final normalizedCurrency = currency.toLowerCase();
+    final results = items.map(BanknoteResultModel.fromJson).toList();
 
-    final filtered = items.where((item) {
-      final text = item.toString().toLowerCase();
+    results.sort((a, b) {
+      final aDate = DateTime.tryParse(a.createdAt);
+      final bDate = DateTime.tryParse(b.createdAt);
 
-      final itemStatus = (item['status'] ?? '').toString().toLowerCase();
+      if (aDate != null && bDate != null) {
+        return bDate.compareTo(aDate);
+      }
 
-      final finalResult = item['final_result'];
-      final resultMap = finalResult is Map ? finalResult : const {};
+      return b.createdAt.compareTo(a.createdAt);
+    });
 
-      final itemCurrency = (item['currency'] ??
-          item['loai_tien'] ??
-          resultMap['currency'] ??
-          resultMap['loai_tien'] ??
-          '')
-          .toString()
-          .toLowerCase();
+    if (limit > 0 && results.length > limit) {
+      return results.take(limit).toList();
+    }
 
-      final matchSearch = keyword.isEmpty || text.contains(keyword);
-      final matchStatus = normalizedStatus == 'all' ||
-          itemStatus == normalizedStatus ||
-          itemStatus.contains(normalizedStatus);
-      final matchCurrency = normalizedCurrency == 'all' ||
-          itemCurrency == normalizedCurrency ||
-          itemCurrency.contains(normalizedCurrency);
-
-      return matchSearch && matchStatus && matchCurrency;
-    }).toList();
-
-    final limited = limit > 0 && filtered.length > limit
-        ? filtered.take(limit).toList()
-        : filtered;
-
-    return limited
-        .map((item) => BanknoteResultModel.fromJson(item))
-        .toList();
+    return results;
   }
 }

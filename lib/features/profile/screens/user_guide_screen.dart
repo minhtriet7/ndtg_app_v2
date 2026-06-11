@@ -18,7 +18,7 @@ class UserGuideScreen extends StatelessWidget {
           AppSizes.lg,
           AppSizes.lg,
           AppSizes.lg,
-          AppSizes.xxl,
+          132,
         ),
         children: const [
           _GuideHero(),

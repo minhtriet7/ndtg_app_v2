@@ -13,6 +13,26 @@ class SupportedCountryModel {
     required this.banknotes,
   });
 
+  String get countryCode {
+    final clean = country.trim().toLowerCase();
+
+    const map = {
+      'vietnam': 'VN',
+      'viet nam': 'VN',
+      'thailand': 'TH',
+      'indonesia': 'ID',
+      'malaysia': 'MY',
+      'singapore': 'SG',
+      'philippines': 'PH',
+      'cambodia': 'KH',
+      'laos': 'LA',
+      'myanmar': 'MM',
+      'brunei': 'BN',
+    };
+
+    return map[clean] ?? _initials(country);
+  }
+
   static List<SupportedCountryModel> fromBanknotes(List<BanknoteDirectoryModel> banknotes) {
     final map = <String, List<BanknoteDirectoryModel>>{};
 
@@ -22,12 +42,8 @@ class SupportedCountryModel {
     }
 
     final countries = map.entries.map((entry) {
-      final notes = entry.value;
-      notes.sort((a, b) {
-        final aValue = double.tryParse(a.denomination.replaceAll(',', '')) ?? 0;
-        final bValue = double.tryParse(b.denomination.replaceAll(',', '')) ?? 0;
-        return aValue.compareTo(bValue);
-      });
+      final notes = [...entry.value];
+      notes.sort((a, b) => a.numericDenomination.compareTo(b.numericDenomination));
 
       return SupportedCountryModel(
         country: entry.key,
@@ -37,7 +53,40 @@ class SupportedCountryModel {
       );
     }).toList();
 
-    countries.sort((a, b) => a.country.compareTo(b.country));
+    const priority = [
+      'Vietnam',
+      'Thailand',
+      'Indonesia',
+      'Malaysia',
+      'Singapore',
+      'Philippines',
+      'Cambodia',
+      'Laos',
+      'Myanmar',
+      'Brunei',
+    ];
+
+    countries.sort((a, b) {
+      final ai = priority.indexWhere((item) => item.toLowerCase() == a.country.toLowerCase());
+      final bi = priority.indexWhere((item) => item.toLowerCase() == b.country.toLowerCase());
+
+      if (ai != -1 && bi != -1) return ai.compareTo(bi);
+      if (ai != -1) return -1;
+      if (bi != -1) return 1;
+
+      return a.country.compareTo(b.country);
+    });
+
     return countries;
+  }
+
+  static String _initials(String value) {
+    final clean = value.trim();
+    if (clean.isEmpty) return '?';
+
+    final parts = clean.split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
+    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+
+    return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
   }
 }

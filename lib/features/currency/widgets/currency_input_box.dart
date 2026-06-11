@@ -29,6 +29,8 @@ class CurrencyInputBox extends StatelessWidget {
   });
 
   Future<void> _openPicker(BuildContext context) async {
+    if (currencies.isEmpty) return;
+
     final selected = await showModalBottomSheet<CurrencyRateModel>(
       context: context,
       isScrollControlled: true,
@@ -46,7 +48,8 @@ class CurrencyInputBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final mutedColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final mutedColor =
+    isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
@@ -54,7 +57,9 @@ class CurrencyInputBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? AppColors.bgDark : AppColors.bgLight,
         borderRadius: BorderRadius.circular(AppSizes.radiusXl),
-        border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,9 +92,11 @@ class CurrencyInputBox extends StatelessWidget {
                 )
                     : TextField(
                   controller: controller,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                   ],
                   onChanged: onAmountChanged,
                   style: TextStyle(
@@ -106,7 +113,11 @@ class CurrencyInputBox extends StatelessWidget {
                     contentPadding: EdgeInsets.zero,
                     isDense: true,
                     hintText: '0',
-                    hintStyle: TextStyle(color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight),
+                    hintStyle: TextStyle(
+                      color: isDark
+                          ? AppColors.textMutedDark
+                          : AppColors.textMutedLight,
+                    ),
                   ),
                 ),
               ),
@@ -122,9 +133,13 @@ class CurrencyInputBox extends StatelessWidget {
                       vertical: AppSizes.sm,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryTeal.withOpacity(isDark ? 0.16 : 0.10),
+                      color: AppColors.primaryTeal.withOpacity(
+                        isDark ? 0.16 : 0.10,
+                      ),
                       borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-                      border: Border.all(color: AppColors.primaryTeal.withOpacity(0.18)),
+                      border: Border.all(
+                        color: AppColors.primaryTeal.withOpacity(0.18),
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -138,7 +153,7 @@ class CurrencyInputBox extends StatelessWidget {
                             shape: BoxShape.circle,
                           ),
                           child: Text(
-                            (selectedCurrency?.targetCurrency ?? '-').substring(0, 1),
+                            _initial(selectedCurrency?.targetCurrency),
                             style: const TextStyle(
                               color: AppColors.primaryTeal,
                               fontSize: 11,
@@ -170,5 +185,11 @@ class CurrencyInputBox extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _initial(String? code) {
+    final value = code?.trim() ?? '';
+    if (value.isEmpty) return '-';
+    return value.substring(0, 1).toUpperCase();
   }
 }

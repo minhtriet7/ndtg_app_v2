@@ -4,6 +4,7 @@ class UserModel {
   final String id;
   final String email;
   final String fullName;
+  final String phone;
   final String avatarUrl;
   final String role;
   final String provider;
@@ -16,6 +17,7 @@ class UserModel {
     required this.id,
     required this.email,
     required this.fullName,
+    required this.phone,
     required this.avatarUrl,
     required this.role,
     required this.provider,
@@ -27,55 +29,124 @@ class UserModel {
 
   bool get isAdmin {
     final normalized = role.toLowerCase().trim();
-    return normalized == 'admin' || normalized == 'superadmin';
+    return normalized == 'admin' ||
+        normalized == 'superadmin' ||
+        normalized == 'owner';
   }
 
   String get initials {
     final cleanName = fullName.trim();
+
     if (cleanName.isEmpty) {
       return email.isNotEmpty ? email[0].toUpperCase() : 'U';
     }
 
-    final parts = cleanName.split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
+    final parts = cleanName
+        .split(RegExp(r'\s+'))
+        .where((item) => item.trim().isNotEmpty)
+        .toList();
+
     if (parts.length == 1) return parts.first[0].toUpperCase();
 
     return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
   }
 
-  factory UserModel.fromJson(Map<String, dynamic> json) {
+  factory UserModel.fromJson(dynamic raw) {
+    final root = ResponseParser.parseMap(raw);
+    final json = ResponseParser.parseMap(
+      root['data'] ?? root['user'] ?? root['profile'] ?? root,
+    );
+
     return UserModel(
-      id: ResponseParser.getValue(json, ['id', '_id', 'user_id'], defaultValue: '').toString(),
-      email: ResponseParser.getValue(json, ['email'], defaultValue: '').toString(),
+      id: ResponseParser.getValue(
+        json,
+        ['id', '_id', 'user_id', 'userId'],
+        defaultValue: '',
+      ).toString(),
+      email: ResponseParser.getValue(
+        json,
+        ['email', 'user.email'],
+        defaultValue: '',
+      ).toString(),
       fullName: ResponseParser.getValue(
         json,
-        ['full_name', 'fullName', 'name', 'display_name', 'displayName', 'username'],
+        [
+          'full_name',
+          'fullName',
+          'name',
+          'display_name',
+          'displayName',
+          'username',
+          'user.full_name',
+          'user.name',
+        ],
         defaultValue: 'BanknoteAI User',
+      ).toString(),
+      phone: ResponseParser.getValue(
+        json,
+        ['phone', 'phone_number', 'phoneNumber'],
+        defaultValue: '',
       ).toString(),
       avatarUrl: ResponseParser.getValue(
         json,
-        ['avatar_url', 'avatarUrl', 'avatar', 'photo_url', 'picture'],
+        [
+          'avatar_url',
+          'avatarUrl',
+          'avatar',
+          'photo_url',
+          'picture',
+          'user.avatar_url',
+          'user.picture',
+        ],
         defaultValue: '',
       ).toString(),
-      role: ResponseParser.getValue(json, ['role'], defaultValue: 'user').toString(),
-      provider: ResponseParser.getValue(json, ['provider', 'auth_provider'], defaultValue: 'email').toString(),
-      tokenBalance: int.tryParse(
+      role: ResponseParser.getValue(
+        json,
+        ['role', 'user.role'],
+        defaultValue: 'user',
+      ).toString(),
+      provider: ResponseParser.getValue(
+        json,
+        ['provider', 'auth_provider', 'login_provider'],
+        defaultValue: 'email',
+      ).toString(),
+      tokenBalance: _asInt(
         ResponseParser.getValue(
           json,
-          ['token_balance', 'tokens', 'balance', 'tokenBalance'],
+          [
+            'token_balance',
+            'tokens',
+            'balance',
+            'tokenBalance',
+            'user.token_balance',
+          ],
           defaultValue: 0,
-        ).toString(),
-      ) ??
-          0,
-      totalScans: int.tryParse(
+        ),
+      ),
+      totalScans: _asInt(
         ResponseParser.getValue(
           json,
-          ['total_scans', 'scan_count', 'scans', 'totalScans'],
+          [
+            'total_scans',
+            'scan_count',
+            'scans',
+            'totalScans',
+            'recognition_count',
+            'user.total_scans',
+          ],
           defaultValue: 0,
-        ).toString(),
-      ) ??
-          0,
-      createdAt: ResponseParser.getValue(json, ['created_at', 'createdAt'], defaultValue: '').toString(),
-      updatedAt: ResponseParser.getValue(json, ['updated_at', 'updatedAt'], defaultValue: '').toString(),
+        ),
+      ),
+      createdAt: ResponseParser.getValue(
+        json,
+        ['created_at', 'createdAt'],
+        defaultValue: '',
+      ).toString(),
+      updatedAt: ResponseParser.getValue(
+        json,
+        ['updated_at', 'updatedAt'],
+        defaultValue: '',
+      ).toString(),
     );
   }
 
@@ -84,6 +155,7 @@ class UserModel {
       id: '',
       email: '',
       fullName: 'BanknoteAI User',
+      phone: '',
       avatarUrl: '',
       role: 'user',
       provider: 'email',
@@ -99,6 +171,7 @@ class UserModel {
       'id': id,
       'email': email,
       'full_name': fullName,
+      'phone': phone,
       'avatar_url': avatarUrl,
       'role': role,
       'provider': provider,
@@ -113,6 +186,7 @@ class UserModel {
     String? id,
     String? email,
     String? fullName,
+    String? phone,
     String? avatarUrl,
     String? role,
     String? provider,
@@ -125,6 +199,7 @@ class UserModel {
       id: id ?? this.id,
       email: email ?? this.email,
       fullName: fullName ?? this.fullName,
+      phone: phone ?? this.phone,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       role: role ?? this.role,
       provider: provider ?? this.provider,
@@ -133,5 +208,14 @@ class UserModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
+  }
+
+  static int _asInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.round();
+
+    final text = value.toString().replaceAll(',', '').trim();
+    return int.tryParse(text) ?? 0;
   }
 }

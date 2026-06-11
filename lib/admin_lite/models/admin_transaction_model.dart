@@ -27,39 +27,92 @@ class AdminTransactionModel {
 
   factory AdminTransactionModel.fromJson(Map<String, dynamic> json) {
     return AdminTransactionModel(
-      id: JsonHelper.safeString(JsonHelper.getValue(json, ['id', '_id'])),
+      id: JsonHelper.safeString(
+        JsonHelper.getValue(json, ['id', '_id', 'transaction_id']),
+      ),
       transactionCode: JsonHelper.safeString(
-        JsonHelper.getValue(json, ['transaction_code', 'payment_code', 'checkout_code']),
+        JsonHelper.getValue(json, [
+          'transaction_code',
+          'payment_code',
+          'checkout_code',
+          'code',
+          'order_code',
+          'reference_code',
+        ]),
         defaultValue: 'UNKNOWN',
       ),
       userId: JsonHelper.safeString(
-        JsonHelper.getValue(json, ['user_id', 'user.id', 'user._id']),
+        JsonHelper.getValue(json, [
+          'user_id',
+          'user.id',
+          'user._id',
+          'userId',
+        ]),
       ),
       userEmail: JsonHelper.safeString(
-        JsonHelper.getValue(json, ['user.email', 'email']),
+        JsonHelper.getValue(json, [
+          'user.email',
+          'email',
+          'user_email',
+          'userEmail',
+          'customer_email',
+        ]),
         defaultValue: 'Unknown user',
       ),
       packageName: JsonHelper.safeString(
-        JsonHelper.getValue(json, ['package_name', 'package.name', 'token_package.name']),
+        JsonHelper.getValue(json, [
+          'package_name',
+          'package.name',
+          'token_package.name',
+          'tokenPackage.name',
+          'plan_name',
+        ]),
         defaultValue: 'Token Package',
       ),
       amount: JsonHelper.safeDouble(
-        JsonHelper.getValue(json, ['amount', 'amount_vnd', 'total_amount', 'price']),
+        JsonHelper.getValue(json, [
+          'amount',
+          'amount_vnd',
+          'total_amount',
+          'total',
+          'price',
+          'paid_amount',
+        ]),
       ),
       tokensAdded: JsonHelper.safeInt(
-        JsonHelper.getValue(json, ['tokens_added', 'tokens', 'token_amount']),
+        JsonHelper.getValue(json, [
+          'tokens_added',
+          'tokens',
+          'token_amount',
+          'token_count',
+          'package.tokens',
+          'token_package.tokens',
+        ]),
       ),
       gateway: JsonHelper.safeString(
-        JsonHelper.getValue(json, ['gateway', 'provider', 'payment_gateway']),
+        JsonHelper.getValue(json, [
+          'gateway',
+          'provider',
+          'payment_gateway',
+          'method',
+        ]),
         defaultValue: 'sepay',
       ),
       status: JsonHelper.safeString(
-        JsonHelper.getValue(json, ['status']),
+        JsonHelper.getValue(json, ['status', 'payment_status']),
         defaultValue: 'pending',
       ),
       createdAt: JsonHelper.safeString(
-        JsonHelper.getValue(json, ['created_at', 'createdAt']),
+        JsonHelper.getValue(json, ['created_at', 'createdAt', 'created']),
       ),
     );
+  }
+
+  bool get isPending {
+    final value = status.toLowerCase();
+    return value.contains('pending') ||
+        value.contains('waiting') ||
+        value.contains('unpaid') ||
+        value.contains('processing');
   }
 }

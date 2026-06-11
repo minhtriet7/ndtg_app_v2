@@ -8,10 +8,12 @@ import '../models/banknote_directory_model.dart';
 
 class BanknoteDirectoryCard extends StatelessWidget {
   final BanknoteDirectoryModel banknote;
+  final VoidCallback? onTap;
 
   const BanknoteDirectoryCard({
     super.key,
     required this.banknote,
+    this.onTap,
   });
 
   @override
@@ -19,12 +21,13 @@ class BanknoteDirectoryCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AppCard(
+      onTap: onTap,
       padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            height: 142,
+            height: 158,
             width: double.infinity,
             padding: const EdgeInsets.all(AppSizes.md),
             decoration: BoxDecoration(
@@ -40,11 +43,11 @@ class BanknoteDirectoryCard extends StatelessWidget {
                       ? Icon(
                     Icons.account_balance_wallet_outlined,
                     color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
-                    size: 54,
+                    size: 58,
                   )
                       : NetworkImageView(
                     imageUrl: banknote.frontImageUrl,
-                    height: 118,
+                    height: 132,
                     width: double.infinity,
                     fit: BoxFit.contain,
                     borderRadius: AppSizes.radiusMd,
@@ -53,25 +56,14 @@ class BanknoteDirectoryCard extends StatelessWidget {
                 Positioned(
                   left: 0,
                   top: 0,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.cardDark.withOpacity(0.92) : Colors.white.withOpacity(0.92),
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(
-                        color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                      ),
-                    ),
-                    child: Text(
-                      banknote.currencyCode,
-                      style: const TextStyle(
-                        color: AppColors.primaryTeal,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
+                  child: _ImageBadge(text: banknote.currencyCode),
                 ),
+                if (banknote.backImageUrl.isNotEmpty)
+                  const Positioned(
+                    right: 0,
+                    top: 0,
+                    child: _ImageBadge(text: 'Front + Back'),
+                  ),
               ],
             ),
           ),
@@ -134,10 +126,61 @@ class BanknoteDirectoryCard extends StatelessWidget {
                     ),
                   ),
                 ],
+                if (onTap != null) ...[
+                  const SizedBox(height: AppSizes.md),
+                  Row(
+                    children: const [
+                      Text(
+                        'View details',
+                        style: TextStyle(
+                          color: AppColors.primaryTeal,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        color: AppColors.primaryTeal,
+                        size: 15,
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ImageBadge extends StatelessWidget {
+  final String text;
+
+  const _ImageBadge({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.cardDark.withOpacity(0.92) : Colors.white.withOpacity(0.92),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+        ),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: AppColors.primaryTeal,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+        ),
       ),
     );
   }

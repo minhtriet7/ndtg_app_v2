@@ -28,11 +28,36 @@ class AdminLiteService {
         return map['data'];
       }
 
-      if (map.containsKey('data') &&
-          map['data'] is Map &&
-          !map.containsKey('kpis') &&
-          !map.containsKey('items')) {
-        return map['data'];
+      if (map.containsKey('data')) {
+        final data = map['data'];
+
+        if (data is List) return data;
+
+        if (data is Map) {
+          final dataMap = Map<String, dynamic>.from(data);
+
+          final hasDashboardKeys = dataMap.containsKey('kpis') ||
+              dataMap.containsKey('summary') ||
+              dataMap.containsKey('payments') ||
+              dataMap.containsKey('payment_overview') ||
+              dataMap.containsKey('system_status') ||
+              dataMap.containsKey('health');
+
+          if (hasDashboardKeys) return dataMap;
+
+          for (final key in [
+            'items',
+            'results',
+            'transactions',
+            'feedbacks',
+            'records',
+            'rows',
+          ]) {
+            if (dataMap[key] is List) return dataMap[key];
+          }
+
+          return dataMap;
+        }
       }
     }
 
@@ -40,8 +65,7 @@ class AdminLiteService {
   }
 
   Map<String, dynamic> _parseMap(dynamic response) {
-    final payload = _unwrapApiData(response);
-    return ResponseParser.parseMap(payload);
+    return ResponseParser.parseMap(_unwrapApiData(response));
   }
 
   List<dynamic> _parseList(dynamic response) {
@@ -88,9 +112,7 @@ class AdminLiteService {
 
   Future<AdminDashboardModel> getDashboardSummary() async {
     final response = await _client.get('/admin/dashboard/summary');
-    final data = _parseMap(response);
-
-    return AdminDashboardModel.fromJson(data);
+    return AdminDashboardModel.fromJson(_parseMap(response));
   }
 
   Future<Map<String, dynamic>> getSystemHealth() async {
@@ -98,71 +120,50 @@ class AdminLiteService {
     return _parseMap(response);
   }
 
-  Future<Map<String, dynamic>> getAgentPerformance() async {
-    final response = await _client.get('/admin/agents/performance');
-    return _parseMap(response);
-  }
-
-  Future<List<Map<String, dynamic>>> getRecentScans({int limit = 8}) async {
-    final response = await _client.get(
-      '/admin/recognition/recent',
-      queryParameters: {'limit': limit},
-    );
-
-    return _parseList(response)
-        .whereType<Map>()
-        .map((item) => Map<String, dynamic>.from(item))
-        .toList();
-  }
-
-  Future<List<AdminTransactionModel>> getPendingTransactions() async {
+  Future<List<AdminTransactionModel>> getPendingTransactions({
+    int limit = 20,
+  }) async {
     final response = await _client.get(
       '/admin/transactions',
       queryParameters: {
         'page': 1,
-        'limit': 20,
+        'limit': limit,
         'status': 'pending',
         'gateway': 'all',
         'search': '',
       },
     );
 
-    return _parseList(response)
+    final items = _parseList(response)
         .whereType<Map>()
-        .map(
-          (item) => AdminTransactionModel.fromJson(
-        Map<String, dynamic>.from(item),
-      ),
-    )
+        .map((item) => AdminTransactionModel.fromJson(Map<String, dynamic>.from(item)))
+        .where((item) => item.isPending)
         .toList();
+
+    return items;
   }
 
-  Future<List<AdminFeedbackModel>> getPendingFeedbacks() async {
-    // Web admin uses this endpoint for pending feedback on dashboard.
+  Future<List<AdminFeedbackModel>> getPendingFeedbacks({
+    int limit = 20,
+  }) async {
     final response = await _client.get(
       '/admin/feedbacks/pending',
-      queryParameters: {'limit': 20},
+      queryParameters: {'limit': limit},
     );
 
-    final pending = _parseList(response);
+    final primary = _parseList(response)
+        .whereType<Map>()
+        .map((item) => AdminFeedbackModel.fromJson(Map<String, dynamic>.from(item)))
+        .where((item) => item.isPending)
+        .toList();
 
-    if (pending.isNotEmpty) {
-      return pending
-          .whereType<Map>()
-          .map(
-            (item) => AdminFeedbackModel.fromJson(
-          Map<String, dynamic>.from(item),
-        ),
-      )
-          .toList();
-    }
+    if (primary.isNotEmpty) return primary;
 
-    // Fallback to manager endpoint.
     final fallbackResponse = await _client.get(
       '/admin/feedbacks',
       queryParameters: {
         'page': 1,
-        'limit': 20,
+        'limit': limit,
         'status': 'pending',
         'type': 'all',
         'priority': 'all',
@@ -173,11 +174,8 @@ class AdminLiteService {
 
     return _parseList(fallbackResponse)
         .whereType<Map>()
-        .map(
-          (item) => AdminFeedbackModel.fromJson(
-        Map<String, dynamic>.from(item),
-      ),
-    )
+        .map((item) => AdminFeedbackModel.fromJson(Map<String, dynamic>.from(item)))
+        .where((item) => item.isPending)
         .toList();
   }
 

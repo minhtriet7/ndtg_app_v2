@@ -134,8 +134,6 @@ class FinalResultModel {
       ], fallback: '0'),
     );
 
-    final total = detectedObjects.isNotEmpty ? 3 : 3;
-
     final detectedCount = _asInt(
       _firstClean([
         ResponseParser.getValue(json, ['detected_count']),
@@ -148,6 +146,7 @@ class FinalResultModel {
       _firstClean([
         ResponseParser.getValue(json, ['total_objects']),
         detectedCount,
+        summary.length,
       ], fallback: '0'),
     );
 
@@ -158,29 +157,33 @@ class FinalResultModel {
       ], fallback: '0'),
     );
 
-    final isMultiObject = detectedObjects.isNotEmpty || summary.length > 1;
-
-    final displayDenomination = rawDenomination.isEmpty
-        ? 'Unknown'
-        : rawDenomination;
-
+    final displayDenomination =
+    rawDenomination.isEmpty ? 'Unknown' : rawDenomination;
     final displayCountry = rawCountry.isEmpty ? 'Unknown' : rawCountry;
-    final displayCurrency = rawCurrency.isEmpty ? _currencyFromDenomination(displayDenomination) : rawCurrency;
+    final displayCurrency = rawCurrency.isEmpty
+        ? _currencyFromDenomination(displayDenomination)
+        : rawCurrency;
+
+    final normalizedCurrency =
+    displayCurrency.isEmpty ? 'Unknown' : displayCurrency;
+
+    final bool multiBanknote = totalObjects > 1 || summary.length > 1;
+    final String consensusText = multiBanknote
+        ? '${resolvedObjects == 0 ? summary.length : resolvedObjects}/${totalObjects == 0 ? summary.length : totalObjects} objects'
+        : '${matched == 0 ? _matchedFromVotes(validVotes) : matched}/3 agents';
 
     return FinalResultModel(
       country: displayCountry,
       denomination: displayDenomination,
-      currency: displayCurrency.isEmpty ? 'Unknown' : displayCurrency,
+      currency: normalizedCurrency,
       status: status,
       method: _firstClean([
         ResponseParser.getValue(json, ['method']),
         ResponseParser.getValue(json, ['phuong_phap']),
       ]),
-      matchedAgents: isMultiObject
-          ? '$resolvedObjects/$totalObjects objects'
-          : '$matched/$total agents',
-      matchedAgentsCount: matched,
-      totalAgents: total,
+      matchedAgents: consensusText,
+      matchedAgentsCount: matched == 0 ? _matchedFromVotes(validVotes) : matched,
+      totalAgents: 3,
       decisionReason: _firstClean([
         ResponseParser.getValue(json, ['quan_diem_trong_tai']),
         ResponseParser.getValue(json, ['decision_reason']),
@@ -219,37 +222,39 @@ class FinalResultModel {
 
   bool get isCompleted {
     final s = status.toLowerCase();
-    return s.contains('completed') || s.contains('success') || s.contains('done');
+    return s.contains('completed') ||
+        s.contains('success') ||
+        s.contains('done');
   }
 
   bool get isMultiObject {
-    return detectedObjects.isNotEmpty || summary.length > 1 || totalObjects > 1;
+    return totalObjects > 1 || summary.length > 1;
   }
 
   String get displayTitle {
     if (isMultiObject && summary.isNotEmpty) {
-      if (summary.length == 1) {
-        final item = summary.first;
-        final d = _firstClean([
-          ResponseParser.getValue(item, ['denomination']),
-          ResponseParser.getValue(item, ['menh_gia']),
-        ], fallback: denomination);
-        final c = _firstClean([
-          ResponseParser.getValue(item, ['currency']),
-          _currencyFromDenomination(d),
-        ], fallback: currency);
-        return '$d $c'.trim();
-      }
       return '$resolvedObjects banknotes detected';
     }
 
     if (!isKnown) return 'Unknown Banknote';
 
-    if (denomination.toUpperCase().contains(currency.toUpperCase())) {
-      return denomination;
+    return formatMoneyLabel(denomination, currency);
+  }
+
+  static String formatMoneyLabel(String denomination, String currency) {
+    final cleanDenomination = denomination.trim();
+    final cleanCurrency = currency.trim().toUpperCase();
+
+    if (cleanDenomination.isEmpty) return 'Unknown';
+    if (cleanCurrency.isEmpty || cleanCurrency == 'UNKNOWN') {
+      return cleanDenomination;
     }
 
-    return '$denomination $currency'.trim();
+    if (RegExp('\\b$cleanCurrency\\b').hasMatch(cleanDenomination.toUpperCase())) {
+      return cleanDenomination;
+    }
+
+    return '$cleanDenomination $cleanCurrency';
   }
 
   static List<Map<String, dynamic>> _listOfMap(dynamic value) {
@@ -293,6 +298,17 @@ class FinalResultModel {
     if (value is int) return value;
     if (value is double) return value.round();
     return int.tryParse(value.toString()) ?? 0;
+  }
+
+  static int _matchedFromVotes(List<Map<String, dynamic>> votes) {
+    if (votes.isEmpty) return 0;
+    final valid = votes.where((vote) {
+      final status = (vote['status'] ?? '').toString().toLowerCase();
+      return status.contains('completed') ||
+          status.contains('success') ||
+          status.contains('done');
+    }).length;
+    return valid == 0 ? votes.length.clamp(0, 3) : valid.clamp(0, 3);
   }
 
   static String _currencyFromDenomination(String value) {

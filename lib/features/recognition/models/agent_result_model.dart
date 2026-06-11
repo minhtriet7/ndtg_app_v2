@@ -52,19 +52,31 @@ class AgentResultModel {
       _currencyFromDenomination(denomination),
     ]);
 
+    final method = _firstClean([
+      ResponseParser.getValue(data, ['method']),
+      ResponseParser.getValue(data, ['phuong_phap']),
+      ResponseParser.getValue(json, ['method']),
+      ResponseParser.getValue(data, ['source']),
+      ResponseParser.getValue(data, ['provider']),
+    ]);
+
+    final rawAgent = _firstClean([
+      ResponseParser.getValue(json, ['agent']),
+      ResponseParser.getValue(json, ['agent_name']),
+      ResponseParser.getValue(data, ['agent']),
+      ResponseParser.getValue(data, ['provider']),
+      method,
+      json.toString(),
+    ], fallback: 'AI Agent');
+
     return AgentResultModel(
-      agentName: _normalizeAgentName(
+      agentName: _normalizeAgentName(rawAgent),
+      status: _normalizeStatus(
         _firstClean([
-          ResponseParser.getValue(json, ['agent']),
-          ResponseParser.getValue(json, ['agent_name']),
-          ResponseParser.getValue(data, ['agent']),
-          ResponseParser.getValue(data, ['provider']),
-        ], fallback: 'AI Agent'),
+          ResponseParser.getValue(json, ['status']),
+          ResponseParser.getValue(data, ['status']),
+        ], fallback: 'waiting'),
       ),
-      status: _firstClean([
-        ResponseParser.getValue(json, ['status']),
-        ResponseParser.getValue(data, ['status']),
-      ], fallback: 'waiting'),
       summary: _firstClean([
         ResponseParser.getValue(json, ['summary']),
         ResponseParser.getValue(data, ['mo_ta']),
@@ -78,11 +90,7 @@ class AgentResultModel {
       country: country,
       denomination: denomination,
       currency: currency,
-      method: _firstClean([
-        ResponseParser.getValue(data, ['method']),
-        ResponseParser.getValue(data, ['phuong_phap']),
-        ResponseParser.getValue(json, ['method']),
-      ]),
+      method: method,
       confidence: _asDouble(
         _firstClean([
           ResponseParser.getValue(data, ['do_tin_cay']),
@@ -111,12 +119,58 @@ class AgentResultModel {
   static String _normalizeAgentName(String value) {
     final text = value.toLowerCase();
 
-    if (text.contains('yolo') || text.contains('ml')) return 'ML/DL Agent';
-    if (text.contains('llm') || text.contains('gemini')) return 'LLM Agent';
-    if (text.contains('lens') || text.contains('visual') || text.contains('serp')) {
+    if (text.contains('yolo') ||
+        text.contains('ml') ||
+        text.contains('vision') ||
+        text.contains('visual classification') ||
+        text.contains('classifier')) {
+      return 'ML/DL Agent';
+    }
+
+    if (text.contains('llm') ||
+        text.contains('gemini') ||
+        text.contains('gpt') ||
+        text.contains('language') ||
+        text.contains('reasoning')) {
+      return 'LLM Agent';
+    }
+
+    if (text.contains('lens') ||
+        text.contains('visual_search') ||
+        text.contains('visual search') ||
+        text.contains('serp') ||
+        text.contains('google')) {
       return 'Visual Search';
     }
-    if (text.contains('aggregator')) return 'Aggregator';
+
+    if (text.contains('aggregator') ||
+        text.contains('majority') ||
+        text.contains('vote') ||
+        text.contains('consensus')) {
+      return 'Aggregator Decision';
+    }
+
+    return value == 'AI Agent' ? 'AI Agent' : value;
+  }
+
+  static String _normalizeStatus(String value) {
+    final text = value.toLowerCase().trim();
+
+    if (text.contains('completed') || text.contains('success') || text.contains('done')) {
+      return 'completed';
+    }
+
+    if (text.contains('running') || text.contains('processing') || text.contains('analyzing')) {
+      return 'running';
+    }
+
+    if (text.contains('failed') || text.contains('error')) {
+      return 'failed';
+    }
+
+    if (text.contains('pending') || text.contains('waiting')) {
+      return 'pending';
+    }
 
     return value;
   }
@@ -136,7 +190,9 @@ class AgentResultModel {
     if (value == null) return 0;
     if (value is double) return value;
     if (value is int) return value.toDouble();
-    return double.tryParse(value.toString()) ?? 0;
+
+    final text = value.toString().replaceAll('%', '').trim();
+    return double.tryParse(text) ?? 0;
   }
 
   static int? _asNullableInt(dynamic value) {

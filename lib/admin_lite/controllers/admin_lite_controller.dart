@@ -18,49 +18,92 @@ class AdminLiteController extends ChangeNotifier {
   List<AdminTransactionModel> _pendingTransactions = [];
   List<AdminFeedbackModel> _pendingFeedbacks = [];
 
+  DateTime? _lastLoadedAt;
+
   bool get isLoading => _isLoading;
   bool get isActionLoading => _isActionLoading;
   String? get error => _error;
 
   AdminDashboardModel get dashboard => _dashboard;
-  Map<String, dynamic> get systemHealth => _systemHealth;
-  List<AdminTransactionModel> get pendingTransactions => _pendingTransactions;
-  List<AdminFeedbackModel> get pendingFeedbacks => _pendingFeedbacks;
+  Map<String, dynamic> get systemHealth => Map.unmodifiable(_systemHealth);
+
+  List<AdminTransactionModel> get pendingTransactions =>
+      List.unmodifiable(_pendingTransactions);
+
+  List<AdminFeedbackModel> get pendingFeedbacks =>
+      List.unmodifiable(_pendingFeedbacks);
+
+  DateTime? get lastLoadedAt => _lastLoadedAt;
 
   Future<void> loadDashboard() async {
+    if (_isLoading) return;
+
     _isLoading = true;
     _error = null;
     notifyListeners();
 
+    String? firstError;
+
     try {
-      final results = await Future.wait([
-        _service.getDashboardSummary(),
-        _service.getSystemHealth(),
-        _service.getPendingTransactions(),
-        _service.getPendingFeedbacks(),
-      ]);
+      try {
+        _dashboard = await _service.getDashboardSummary();
+      } catch (e) {
+        firstError ??= _errorMessage(e, 'Failed to load admin summary.');
+      }
 
-      _dashboard = results[0] as AdminDashboardModel;
-      _systemHealth = results[1] as Map<String, dynamic>;
-      _pendingTransactions = results[2] as List<AdminTransactionModel>;
-      _pendingFeedbacks = results[3] as List<AdminFeedbackModel>;
+      try {
+        _pendingTransactions = await _service.getPendingTransactions();
 
-      // Some backend dashboard summaries may omit pending counters while
-      // the pending-list endpoints return real data. Use the loaded lists as
-      // a safe UI fallback without changing backend behavior.
-      if ((_dashboard.pendingTransactions == 0 && _pendingTransactions.isNotEmpty) ||
-          (_dashboard.pendingFeedbacks == 0 && _pendingFeedbacks.isNotEmpty)) {
         _dashboard = _dashboard.copyWith(
-          pendingTransactions: _dashboard.pendingTransactions == 0
+          pendingTransactions: _pendingTransactions.isNotEmpty
               ? _pendingTransactions.length
               : _dashboard.pendingTransactions,
-          pendingFeedbacks: _dashboard.pendingFeedbacks == 0
+        );
+      } catch (e) {
+        firstError ??= _errorMessage(e, 'Failed to load pending transactions.');
+      }
+
+      try {
+        _pendingFeedbacks = await _service.getPendingFeedbacks();
+
+        _dashboard = _dashboard.copyWith(
+          pendingFeedbacks: _pendingFeedbacks.isNotEmpty
               ? _pendingFeedbacks.length
               : _dashboard.pendingFeedbacks,
         );
+      } catch (e) {
+        firstError ??= _errorMessage(e, 'Failed to load pending feedback.');
       }
+
+      try {
+        _systemHealth = await _service.getSystemHealth();
+
+        final healthStatus = _statusFromHealth(_systemHealth);
+        if (_dashboard.systemStatus == 'unknown' && healthStatus != 'unknown') {
+          _dashboard = _dashboard.copyWith(systemStatus: healthStatus);
+        }
+      } catch (_) {
+        _systemHealth = {
+          'status': 'unknown',
+          'message': 'System health endpoint is unavailable.',
+        };
+
+        if (_dashboard.systemStatus == 'unknown') {
+          _dashboard = _dashboard.copyWith(systemStatus: 'unknown');
+        }
+      }
+
+      _lastLoadedAt = DateTime.now();
+
+      final hasAnyRealData = _dashboard.totalUsers > 0 ||
+          _dashboard.totalScans > 0 ||
+          _dashboard.totalRevenue > 0 ||
+          _pendingTransactions.isNotEmpty ||
+          _pendingFeedbacks.isNotEmpty;
+
+      _error = hasAnyRealData ? null : firstError;
     } catch (e) {
-      _error = e is ApiException ? e.message : 'Failed to load admin dashboard.';
+      _error = _errorMessage(e, 'Failed to load admin dashboard.');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -68,14 +111,22 @@ class AdminLiteController extends ChangeNotifier {
   }
 
   Future<void> loadPendingTransactions() async {
+    if (_isLoading) return;
+
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
       _pendingTransactions = await _service.getPendingTransactions();
+
+      _dashboard = _dashboard.copyWith(
+        pendingTransactions: _pendingTransactions.length,
+      );
+
+      _lastLoadedAt = DateTime.now();
     } catch (e) {
-      _error = e is ApiException ? e.message : 'Failed to load pending transactions.';
+      _error = _errorMessage(e, 'Failed to load pending transactions.');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -83,14 +134,22 @@ class AdminLiteController extends ChangeNotifier {
   }
 
   Future<void> loadPendingFeedbacks() async {
+    if (_isLoading) return;
+
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
       _pendingFeedbacks = await _service.getPendingFeedbacks();
+
+      _dashboard = _dashboard.copyWith(
+        pendingFeedbacks: _pendingFeedbacks.length,
+      );
+
+      _lastLoadedAt = DateTime.now();
     } catch (e) {
-      _error = e is ApiException ? e.message : 'Failed to load pending feedback.';
+      _error = _errorMessage(e, 'Failed to load pending feedback.');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -98,6 +157,12 @@ class AdminLiteController extends ChangeNotifier {
   }
 
   Future<bool> markTransactionPaid(String transactionId) async {
+    if (transactionId.trim().isEmpty) {
+      _error = 'Missing transaction id.';
+      notifyListeners();
+      return false;
+    }
+
     _isActionLoading = true;
     _error = null;
     notifyListeners();
@@ -107,7 +172,8 @@ class AdminLiteController extends ChangeNotifier {
       await loadPendingTransactions();
       return true;
     } catch (e) {
-      _error = e is ApiException ? e.message : 'Failed to mark transaction as paid.';
+      _error = _errorMessage(e, 'Failed to mark transaction as paid.');
+      notifyListeners();
       return false;
     } finally {
       _isActionLoading = false;
@@ -116,6 +182,12 @@ class AdminLiteController extends ChangeNotifier {
   }
 
   Future<bool> cancelTransaction(String transactionId) async {
+    if (transactionId.trim().isEmpty) {
+      _error = 'Missing transaction id.';
+      notifyListeners();
+      return false;
+    }
+
     _isActionLoading = true;
     _error = null;
     notifyListeners();
@@ -125,7 +197,8 @@ class AdminLiteController extends ChangeNotifier {
       await loadPendingTransactions();
       return true;
     } catch (e) {
-      _error = e is ApiException ? e.message : 'Failed to cancel transaction.';
+      _error = _errorMessage(e, 'Failed to cancel transaction.');
+      notifyListeners();
       return false;
     } finally {
       _isActionLoading = false;
@@ -134,6 +207,12 @@ class AdminLiteController extends ChangeNotifier {
   }
 
   Future<bool> resolveFeedback(String feedbackId) async {
+    if (feedbackId.trim().isEmpty) {
+      _error = 'Missing feedback id.';
+      notifyListeners();
+      return false;
+    }
+
     _isActionLoading = true;
     _error = null;
     notifyListeners();
@@ -143,7 +222,8 @@ class AdminLiteController extends ChangeNotifier {
       await loadPendingFeedbacks();
       return true;
     } catch (e) {
-      _error = e is ApiException ? e.message : 'Failed to resolve feedback.';
+      _error = _errorMessage(e, 'Failed to resolve feedback.');
+      notifyListeners();
       return false;
     } finally {
       _isActionLoading = false;
@@ -152,6 +232,12 @@ class AdminLiteController extends ChangeNotifier {
   }
 
   Future<bool> updateFeedbackPriority(String feedbackId, String priority) async {
+    if (feedbackId.trim().isEmpty) {
+      _error = 'Missing feedback id.';
+      notifyListeners();
+      return false;
+    }
+
     _isActionLoading = true;
     _error = null;
     notifyListeners();
@@ -161,7 +247,8 @@ class AdminLiteController extends ChangeNotifier {
       await loadPendingFeedbacks();
       return true;
     } catch (e) {
-      _error = e is ApiException ? e.message : 'Failed to update feedback priority.';
+      _error = _errorMessage(e, 'Failed to update feedback priority.');
+      notifyListeners();
       return false;
     } finally {
       _isActionLoading = false;
@@ -172,5 +259,23 @@ class AdminLiteController extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  String _statusFromHealth(Map<String, dynamic> health) {
+    final value = health['status'] ??
+        health['system_status'] ??
+        health['api'] ??
+        health['backend'];
+
+    final text = value?.toString().trim();
+
+    if (text == null || text.isEmpty) return 'unknown';
+
+    return text;
+  }
+
+  String _errorMessage(dynamic error, String fallback) {
+    if (error is ApiException) return error.message;
+    return fallback;
   }
 }

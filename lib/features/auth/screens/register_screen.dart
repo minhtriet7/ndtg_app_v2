@@ -50,8 +50,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _handleGoogleRegister() async {
     FocusScope.of(context).unfocus();
+
     final auth = context.read<AuthController>();
     final success = await auth.loginWithGoogle();
+
     _handleAuthResult(success);
   }
 
@@ -82,36 +84,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create account'),
-        backgroundColor: Colors.transparent,
-      ),
+      resizeToAvoidBottomInset: true,
       body: LoadingOverlay(
         isLoading: auth.isLoading,
-        message: 'Creating your account.',
-        child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: BoxDecoration(
-            gradient: isDark
-                ? AppColors.darkGradient
-                : const LinearGradient(
-              colors: [Color(0xFFF8FBFF), Color(0xFFEFFDFB), Color(0xFFF8FBFF)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
+        message: 'Creating your account...',
+        child: _AuthBackground(
+          isDark: isDark,
           child: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(AppSizes.lg, AppSizes.md, AppSizes.lg, AppSizes.xxl),
-              child: Center(
+            child: Center(
+              child: SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(
+                  AppSizes.lg,
+                  AppSizes.md,
+                  AppSizes.lg,
+                  AppSizes.xl,
+                ),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: AppSizes.maxContentWidth),
+                  constraints: const BoxConstraints(
+                    maxWidth: AppSizes.maxContentWidth,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _RegisterHero(isDark: isDark),
-                      const SizedBox(height: AppSizes.lg),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: IconButton.filledTonal(
+                          onPressed:
+                          auth.isLoading ? null : () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.arrow_back_rounded),
+                        ),
+                      ),
+                      const SizedBox(height: AppSizes.sm),
+                      const _AuthBrandHeader(
+                        title: 'Create account',
+                        subtitle:
+                        'Start using BanknoteAI multi-agent recognition workspace',
+                      ),
+                      const SizedBox(height: AppSizes.xl),
                       AppCard(
                         padding: const EdgeInsets.all(AppSizes.lg),
                         child: Form(
@@ -119,19 +129,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              _GoogleSignInButton(
+                              _GoogleButton(
+                                text: 'Continue with Google',
                                 isLoading: auth.isLoading,
                                 onPressed: _handleGoogleRegister,
                               ),
                               const SizedBox(height: AppSizes.lg),
-                              const _AuthDivider(),
+                              const _AuthDivider(text: 'or register with email'),
                               const SizedBox(height: AppSizes.lg),
                               AppTextField(
                                 label: 'Full name',
                                 hint: 'Your name',
                                 controller: _nameController,
                                 prefixIcon: Icons.person_outline_rounded,
-                                validator: (value) => Validators.validateRequired(value, fieldName: 'Full name'),
+                                validator: (value) => Validators.validateRequired(
+                                  value,
+                                  fieldName: 'Full name',
+                                ),
                               ),
                               const SizedBox(height: AppSizes.md),
                               AppTextField(
@@ -159,9 +173,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 isPassword: true,
                                 prefixIcon: Icons.lock_reset_outlined,
                                 validator: (value) {
-                                  final required = Validators.validateRequired(value, fieldName: 'Confirm password');
+                                  final required =
+                                  Validators.validateRequired(
+                                    value,
+                                    fieldName: 'Confirm password',
+                                  );
+
                                   if (required != null) return required;
-                                  if (value != _passwordController.text) return 'Passwords do not match.';
+                                  if (value != _passwordController.text) {
+                                    return 'Passwords do not match.';
+                                  }
+
                                   return null;
                                 },
                               ),
@@ -169,34 +191,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               AppButton(
                                 text: 'Create account',
                                 icon: Icons.person_add_alt_1_rounded,
-                                onPressed: _handleRegister,
                                 isLoading: auth.isLoading,
+                                onPressed: auth.isLoading ? null : _handleRegister,
                               ),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: AppSizes.md),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              'Already have an account?',
-                              style: TextStyle(
-                                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil(
-                              RouteNames.login,
-                                  (route) => route.settings.name == RouteNames.splash,
-                            ),
-                            child: const Text('Sign in'),
-                          ),
-                        ],
+                      const SizedBox(height: AppSizes.lg),
+                      _SwitchAuthRow(
+                        text: 'Already have an account?',
+                        action: 'Sign in',
+                        onTap: auth.isLoading
+                            ? null
+                            : () {
+                          auth.clearError();
+                          Navigator.of(context).pushNamedAndRemoveUntil(
+                            RouteNames.login,
+                                (route) => false,
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -210,60 +224,134 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 }
 
-class _RegisterHero extends StatelessWidget {
+class _AuthBackground extends StatelessWidget {
   final bool isDark;
+  final Widget child;
 
-  const _RegisterHero({required this.isDark});
+  const _AuthBackground({
+    required this.isDark,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: EdgeInsets.zero,
-      hasBorder: false,
-      child: Container(
-        padding: const EdgeInsets.all(AppSizes.lg),
-        decoration: BoxDecoration(
-          gradient: AppColors.tealGradient,
-          borderRadius: BorderRadius.circular(AppSizes.radiusXxl),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primaryTeal.withOpacity(isDark ? 0.10 : 0.22),
-              blurRadius: 30,
-              offset: const Offset(0, 16),
-            ),
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: isDark
+            ? AppColors.darkGradient
+            : const LinearGradient(
+          colors: [
+            Color(0xFFF8FBFF),
+            Color(0xFFEFFFFB),
+            Color(0xFFF8FBFF),
           ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 38),
-            SizedBox(height: AppSizes.md),
-            Text(
-              'Start scanning smarter',
-              style: TextStyle(color: Colors.white, fontSize: 26, height: 1.1, fontWeight: FontWeight.w900, letterSpacing: -0.7),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -120,
+            right: -100,
+            child: _AuthGlow(
+              color: AppColors.primaryTeal.withOpacity(isDark ? 0.16 : 0.13),
             ),
-            SizedBox(height: AppSizes.sm),
-            Text(
-              'Create your BanknoteAI account to use the multi-agent recognition pipeline.',
-              style: TextStyle(color: Colors.white70, height: 1.45, fontWeight: FontWeight.w600),
+          ),
+          Positioned(
+            bottom: -150,
+            left: -120,
+            child: _AuthGlow(
+              color: AppColors.info.withOpacity(isDark ? 0.12 : 0.09),
             ),
-          ],
-        ),
+          ),
+          child,
+        ],
       ),
     );
   }
 }
 
-class _GoogleSignInButton extends StatelessWidget {
+class _AuthBrandHeader extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const _AuthBrandHeader({
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Column(
+      children: [
+        Container(
+          width: 78,
+          height: 78,
+          decoration: BoxDecoration(
+            gradient: AppColors.tealGradient,
+            borderRadius: BorderRadius.circular(26),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryTeal.withOpacity(isDark ? 0.18 : 0.26),
+                blurRadius: 28,
+                offset: const Offset(0, 14),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.auto_awesome_rounded,
+            color: Colors.white,
+            size: 40,
+          ),
+        ),
+        const SizedBox(height: AppSizes.md),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            fontSize: 27,
+            height: 1.05,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.9,
+          ),
+        ),
+        const SizedBox(height: 7),
+        Text(
+          subtitle,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+            fontSize: 13,
+            height: 1.35,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GoogleButton extends StatelessWidget {
+  final String text;
   final bool isLoading;
   final VoidCallback onPressed;
 
-  const _GoogleSignInButton({required this.isLoading, required this.onPressed});
+  const _GoogleButton({
+    required this.text,
+    required this.isLoading,
+    required this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
     return AppButton(
-      text: 'Continue with Google',
+      text: text,
       type: AppButtonType.outline,
       icon: Icons.g_mobiledata_rounded,
       isLoading: isLoading,
@@ -273,26 +361,90 @@ class _GoogleSignInButton extends StatelessWidget {
 }
 
 class _AuthDivider extends StatelessWidget {
-  const _AuthDivider();
+  final String text;
+
+  const _AuthDivider({required this.text});
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Row(
       children: [
         const Expanded(child: Divider()),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
           child: Text(
-            'or register with email',
+            text,
             style: TextStyle(
-              color: Theme.of(context).brightness == Brightness.dark ? AppColors.textMutedDark : AppColors.textMutedLight,
-              fontWeight: FontWeight.w700,
+              color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
               fontSize: 12,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
         const Expanded(child: Divider()),
       ],
+    );
+  }
+}
+
+class _SwitchAuthRow extends StatelessWidget {
+  final String text;
+  final String action;
+  final VoidCallback? onTap;
+
+  const _SwitchAuthRow({
+    required this.text,
+    required this.action,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Text(
+          text,
+          style: TextStyle(
+            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        TextButton(
+          onPressed: onTap,
+          child: Text(action),
+        ),
+      ],
+    );
+  }
+}
+
+class _AuthGlow extends StatelessWidget {
+  final Color color;
+
+  const _AuthGlow({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 260,
+      height: 260,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        boxShadow: [
+          BoxShadow(
+            color: color,
+            blurRadius: 90,
+            spreadRadius: 34,
+          ),
+        ],
+      ),
     );
   }
 }

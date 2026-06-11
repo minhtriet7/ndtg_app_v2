@@ -23,8 +23,26 @@ class SupportedBanknotesScreen extends StatelessWidget {
   }
 }
 
-class _SupportedBanknotesView extends StatelessWidget {
+class _SupportedBanknotesView extends StatefulWidget {
   const _SupportedBanknotesView();
+
+  @override
+  State<_SupportedBanknotesView> createState() => _SupportedBanknotesViewState();
+}
+
+class _SupportedBanknotesViewState extends State<_SupportedBanknotesView> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _clearSearch(BanknoteDirectoryController controller) {
+    _searchController.clear();
+    controller.clearSearch();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +67,9 @@ class _SupportedBanknotesView extends StatelessWidget {
                   ),
                   child: _DirectoryHeader(
                     controller: controller,
+                    searchController: _searchController,
                     isDark: isDark,
+                    onClearSearch: () => _clearSearch(controller),
                   ),
                 ),
               ),
@@ -64,12 +84,32 @@ class _SupportedBanknotesView extends StatelessWidget {
                   ),
                 )
               else if (controller.countries.isEmpty)
-                  const SliverFillRemaining(
+                  SliverFillRemaining(
                     hasScrollBody: false,
-                    child: EmptyState(
-                      title: 'No supported banknotes',
-                      message: 'Try a different search keyword or refresh the directory.',
-                      icon: Icons.public_off_rounded,
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSizes.lg),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const EmptyState(
+                            title: 'No supported banknotes',
+                            message:
+                            'Try a different search keyword or refresh the directory.',
+                            icon: Icons.public_off_rounded,
+                          ),
+                          if (controller.searchQuery.isNotEmpty) ...[
+                            const SizedBox(height: AppSizes.md),
+                            SizedBox(
+                              height: 48,
+                              child: OutlinedButton.icon(
+                                onPressed: () => _clearSearch(controller),
+                                icon: const Icon(Icons.close_rounded),
+                                label: const Text('Clear search'),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   )
                 else
@@ -91,7 +131,8 @@ class _SupportedBanknotesView extends StatelessWidget {
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) => BanknoteCountryDetailScreen(country: country),
+                                builder: (_) =>
+                                    BanknoteCountryDetailScreen(country: country),
                               ),
                             );
                           },
@@ -109,15 +150,34 @@ class _SupportedBanknotesView extends StatelessWidget {
 
 class _DirectoryHeader extends StatelessWidget {
   final BanknoteDirectoryController controller;
+  final TextEditingController searchController;
   final bool isDark;
+  final VoidCallback onClearSearch;
 
   const _DirectoryHeader({
     required this.controller,
+    required this.searchController,
     required this.isDark,
+    required this.onClearSearch,
   });
 
   @override
   Widget build(BuildContext context) {
+    final chips = controller.availableCountries.isEmpty
+        ? [
+      'Vietnam',
+      'Thailand',
+      'Indonesia',
+      'Malaysia',
+      'Singapore',
+      'Philippines',
+      'Cambodia',
+      'Laos',
+      'Myanmar',
+      'Brunei',
+    ]
+        : controller.availableCountries;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -132,7 +192,7 @@ class _DirectoryHeader extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          'Browse supported Southeast Asian banknotes and AI reference metadata.',
+          'Browse supported Southeast Asian banknotes, reference images, security features, and VND conversion hints.',
           style: TextStyle(
             color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
             height: 1.4,
@@ -173,6 +233,7 @@ class _DirectoryHeader extends StatelessWidget {
         ),
         const SizedBox(height: AppSizes.lg),
         TextField(
+          controller: searchController,
           onChanged: controller.setSearchQuery,
           decoration: InputDecoration(
             hintText: 'Search country, currency code, denomination...',
@@ -180,7 +241,7 @@ class _DirectoryHeader extends StatelessWidget {
             suffixIcon: controller.searchQuery.isEmpty
                 ? null
                 : IconButton(
-              onPressed: controller.clearSearch,
+              onPressed: onClearSearch,
               icon: const Icon(Icons.close_rounded),
             ),
           ),
@@ -193,27 +254,20 @@ class _DirectoryHeader extends StatelessWidget {
               CountryFilterChip(
                 label: 'All',
                 selected: controller.searchQuery.isEmpty,
-                onTap: controller.clearSearch,
+                onTap: onClearSearch,
               ),
               const SizedBox(width: AppSizes.sm),
-              ...[
-                'Vietnam',
-                'Thailand',
-                'Indonesia',
-                'Malaysia',
-                'Singapore',
-                'Philippines',
-                'Cambodia',
-                'Laos',
-                'Myanmar',
-                'Brunei',
-              ].map(
+              ...chips.map(
                     (country) => Padding(
                   padding: const EdgeInsets.only(right: AppSizes.sm),
                   child: CountryFilterChip(
                     label: country,
-                    selected: controller.searchQuery.toLowerCase() == country.toLowerCase(),
-                    onTap: () => controller.setSearchQuery(country),
+                    selected:
+                    controller.searchQuery.toLowerCase() == country.toLowerCase(),
+                    onTap: () {
+                      searchController.text = country;
+                      controller.filterCountry(country);
+                    },
                   ),
                 ),
               ),
@@ -225,7 +279,9 @@ class _DirectoryHeader extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                'Supported Countries',
+                controller.searchQuery.isEmpty
+                    ? 'Supported Countries'
+                    : 'Filtered Countries',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.4,
@@ -294,13 +350,13 @@ class _DirectoryLoading extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(AppSizes.lg, 0, AppSizes.lg, 116),
       child: Column(
         children: [
-          LoadingSkeleton(height: 84, borderRadius: AppSizes.radiusLg),
+          LoadingSkeleton(height: 92, borderRadius: AppSizes.radiusLg),
           SizedBox(height: AppSizes.md),
-          LoadingSkeleton(height: 84, borderRadius: AppSizes.radiusLg),
+          LoadingSkeleton(height: 92, borderRadius: AppSizes.radiusLg),
           SizedBox(height: AppSizes.md),
-          LoadingSkeleton(height: 84, borderRadius: AppSizes.radiusLg),
+          LoadingSkeleton(height: 92, borderRadius: AppSizes.radiusLg),
           SizedBox(height: AppSizes.md),
-          LoadingSkeleton(height: 84, borderRadius: AppSizes.radiusLg),
+          LoadingSkeleton(height: 92, borderRadius: AppSizes.radiusLg),
         ],
       ),
     );

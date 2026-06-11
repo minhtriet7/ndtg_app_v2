@@ -13,6 +13,17 @@ import '../models/register_request.dart';
 class AuthService {
   final DioClient _client = DioClient();
 
+  dynamic _unwrap(dynamic response) {
+    try {
+      final data = response.data;
+      if (data != null) return data;
+    } catch (_) {
+      // DioClient may already return normalized raw data.
+    }
+
+    return response;
+  }
+
   Future<AuthResponse> login(LoginRequest request) async {
     try {
       final response = await _client.post(
@@ -21,7 +32,7 @@ class AuthService {
       );
 
       return AuthResponse.fromJson(
-        ResponseParser.parseMap(response.data ?? response),
+        ResponseParser.parseMap(_unwrap(response)),
       );
     } on DioException catch (error) {
       final statusCode = error.response?.statusCode;
@@ -34,7 +45,7 @@ class AuthService {
         );
 
         return AuthResponse.fromJson(
-          ResponseParser.parseMap(formResponse.data ?? formResponse),
+          ResponseParser.parseMap(_unwrap(formResponse)),
         );
       }
 
@@ -49,16 +60,26 @@ class AuthService {
     );
 
     return AuthResponse.fromJson(
-      ResponseParser.parseMap(response.data ?? response),
+      ResponseParser.parseMap(_unwrap(response)),
     );
   }
 
   Future<UserInfo> getMe() async {
-    final response = await _client.get(ApiEndpoints.userMe);
+    dynamic response;
 
-    final payload = ResponseParser.parseMap(response);
+    try {
+      response = await _client.get(ApiEndpoints.userMe);
+    } catch (_) {
+      response = await _client.get(ApiEndpoints.authMe);
+    }
+
+    final payload = ResponseParser.parseMap(_unwrap(response));
     final data = ResponseParser.parseMap(
-      payload['data'] ?? payload['user'] ?? payload,
+      payload['data'] ??
+          payload['user'] ??
+          payload['profile'] ??
+          payload['account'] ??
+          payload,
     );
 
     if (data.isEmpty) {
@@ -70,7 +91,10 @@ class AuthService {
 
   String getGoogleLoginUrl() {
     final root = AppConfig.baseUrl.endsWith('/api/v1')
-        ? AppConfig.baseUrl.substring(0, AppConfig.baseUrl.length - '/api/v1'.length)
+        ? AppConfig.baseUrl.substring(
+      0,
+      AppConfig.baseUrl.length - '/api/v1'.length,
+    )
         : AppConfig.baseUrl;
 
     return '$root/api/v1/auth/google/login?platform=mobile';

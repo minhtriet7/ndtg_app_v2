@@ -46,7 +46,9 @@ class _HistoryFilterBarState extends State<HistoryFilterBar> {
   @override
   void didUpdateWidget(covariant HistoryFilterBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.searchQuery != widget.searchQuery && _searchController.text != widget.searchQuery) {
+
+    if (oldWidget.searchQuery != widget.searchQuery &&
+        _searchController.text != widget.searchQuery) {
       _searchController.text = widget.searchQuery;
     }
   }
@@ -55,6 +57,11 @@ class _HistoryFilterBarState extends State<HistoryFilterBar> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _reset() {
+    _searchController.clear();
+    widget.onReset();
   }
 
   @override
@@ -76,13 +83,19 @@ class _HistoryFilterBarState extends State<HistoryFilterBar> {
                   color: AppColors.primaryTeal.withOpacity(0.10),
                   borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                 ),
-                child: const Icon(Icons.tune_rounded, color: AppColors.primaryTeal, size: 20),
+                child: const Icon(
+                  Icons.tune_rounded,
+                  color: AppColors.primaryTeal,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: AppSizes.md),
               Expanded(
                 child: Text(
                   'Refine results',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ],
@@ -104,14 +117,19 @@ class _HistoryFilterBarState extends State<HistoryFilterBar> {
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       isExpanded: true,
-                      value: widget.statusFilter,
+                      value: _safeStatusValue(widget.statusFilter),
                       borderRadius: BorderRadius.circular(AppSizes.radiusLg),
                       items: const {
                         'all': 'All',
                         'completed': 'Completed',
                         'needs_review': 'Needs review',
                         'failed': 'Failed',
-                      }.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
+                      }.entries.map((entry) {
+                        return DropdownMenuItem(
+                          value: entry.key,
+                          child: Text(entry.value),
+                        );
+                      }).toList(),
                       onChanged: (value) {
                         if (value != null) widget.onStatusChanged(value);
                       },
@@ -126,11 +144,17 @@ class _HistoryFilterBarState extends State<HistoryFilterBar> {
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       isExpanded: true,
-                      value: ['all', ...widget.currencies].contains(widget.currencyFilter) ? widget.currencyFilter : 'all',
+                      value: _safeCurrencyValue(
+                        widget.currencyFilter,
+                        widget.currencies,
+                      ),
                       borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-                      items: ['all', ...widget.currencies]
-                          .map((code) => DropdownMenuItem(value: code, child: Text(code == 'all' ? 'All' : code)))
-                          .toList(),
+                      items: ['all', ...widget.currencies].map((code) {
+                        return DropdownMenuItem(
+                          value: code,
+                          child: Text(code == 'all' ? 'All' : code),
+                        );
+                      }).toList(),
                       onChanged: (value) {
                         if (value != null) widget.onCurrencyChanged(value);
                       },
@@ -148,7 +172,7 @@ class _HistoryFilterBarState extends State<HistoryFilterBar> {
                   text: 'Reset',
                   type: AppButtonType.outline,
                   icon: Icons.refresh_rounded,
-                  onPressed: widget.onReset,
+                  onPressed: _reset,
                 ),
               ),
               const SizedBox(width: AppSizes.md),
@@ -165,13 +189,26 @@ class _HistoryFilterBarState extends State<HistoryFilterBar> {
       ),
     );
   }
+
+  String _safeStatusValue(String value) {
+    const allowed = ['all', 'completed', 'needs_review', 'failed'];
+    return allowed.contains(value) ? value : 'all';
+  }
+
+  String _safeCurrencyValue(String value, List<String> currencies) {
+    final allowed = ['all', ...currencies];
+    return allowed.contains(value) ? value : 'all';
+  }
 }
 
 class _DropdownShell extends StatelessWidget {
   final String label;
   final Widget child;
 
-  const _DropdownShell({required this.label, required this.child});
+  const _DropdownShell({
+    required this.label,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -195,7 +232,9 @@ class _DropdownShell extends StatelessWidget {
           decoration: BoxDecoration(
             color: isDark ? AppColors.bgDark : AppColors.bgLight,
             borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-            border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+            border: Border.all(
+              color: isDark ? AppColors.borderDark : AppColors.borderLight,
+            ),
           ),
           child: child,
         ),

@@ -34,14 +34,19 @@ class _GoogleSuccessScreenState extends State<GoogleSuccessScreen> {
     await auth.checkAuthStatus();
 
     if (!mounted) return;
+
     if (auth.isAuthenticated) {
-      Navigator.of(context).pushNamedAndRemoveUntil(RouteNames.main, (route) => false);
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        RouteNames.main,
+            (route) => false,
+      );
       return;
     }
 
     setState(() {
       _isChecking = false;
-      _message = 'Google sign-in did not return an active session. Please sign in again.';
+      _message =
+      'Google sign-in did not return an active session. Please sign in again.';
     });
   }
 
@@ -57,9 +62,13 @@ class _GoogleSuccessScreenState extends State<GoogleSuccessScreen> {
           gradient: isDark
               ? AppColors.darkGradient
               : const LinearGradient(
-            colors: [Color(0xFFF8FBFF), Color(0xFFEFFDFB)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFF8FBFF),
+              Color(0xFFEFFFFB),
+              Color(0xFFF8FBFF),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
         child: SafeArea(
@@ -73,7 +82,10 @@ class _GoogleSuccessScreenState extends State<GoogleSuccessScreen> {
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.cardDark : Colors.white,
                     borderRadius: BorderRadius.circular(AppSizes.radiusXxl),
-                    border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                    border: Border.all(
+                      color:
+                      isDark ? AppColors.borderDark : AppColors.borderLight,
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(isDark ? 0.25 : 0.08),
@@ -85,49 +97,72 @@ class _GoogleSuccessScreenState extends State<GoogleSuccessScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 82,
-                        height: 82,
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        width: 86,
+                        height: 86,
                         decoration: BoxDecoration(
                           gradient: _isChecking ? AppColors.tealGradient : null,
-                          color: _isChecking ? null : AppColors.warning.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(28),
+                          color: _isChecking
+                              ? null
+                              : AppColors.warning.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            if (_isChecking)
+                              BoxShadow(
+                                color: AppColors.primaryTeal.withOpacity(0.22),
+                                blurRadius: 24,
+                                offset: const Offset(0, 12),
+                              ),
+                          ],
                         ),
                         child: Icon(
-                          _isChecking ? Icons.sync_rounded : Icons.info_outline_rounded,
+                          _isChecking
+                              ? Icons.sync_rounded
+                              : Icons.info_outline_rounded,
                           color: _isChecking ? Colors.white : AppColors.warning,
-                          size: 38,
+                          size: 40,
                         ),
                       ),
-                      const SizedBox(height: 22),
+                      const SizedBox(height: 24),
                       Text(
-                        _isChecking ? 'Completing sign-in' : 'Google sign-in requires action',
+                        _isChecking
+                            ? 'Completing sign-in'
+                            : 'Google sign-in requires action',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w900,
-                          letterSpacing: -0.3,
+                          letterSpacing: -0.4,
                         ),
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        _message ?? 'Please wait while BanknoteAI verifies your secure session.',
+                        _message ??
+                            'Please wait while BanknoteAI verifies your secure session.',
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                        style: TextStyle(
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondaryLight,
                           height: 1.45,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 26),
                       if (_isChecking)
-                        const CircularProgressIndicator(color: AppColors.primaryTeal)
+                        const CircularProgressIndicator(
+                          color: AppColors.primaryTeal,
+                        )
                       else
                         AppButton(
                           text: 'Back to sign in',
-                          isFullWidth: false,
-                          onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil(
-                            RouteNames.login,
-                                (route) => false,
-                          ),
+                          icon: Icons.login_rounded,
+                          onPressed: () {
+                            Navigator.of(context).pushNamedAndRemoveUntil(
+                              RouteNames.login,
+                                  (route) => false,
+                            );
+                          },
                         ),
                     ],
                   ),

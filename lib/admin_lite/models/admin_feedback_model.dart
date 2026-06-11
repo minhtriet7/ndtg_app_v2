@@ -23,33 +23,60 @@ class AdminFeedbackModel {
 
   factory AdminFeedbackModel.fromJson(Map<String, dynamic> json) {
     return AdminFeedbackModel(
-      id: JsonHelper.safeString(JsonHelper.getValue(json, ['id', '_id'])),
+      id: JsonHelper.safeString(
+        JsonHelper.getValue(json, ['id', '_id', 'feedback_id']),
+      ),
       userEmail: JsonHelper.safeString(
-        JsonHelper.getValue(json, ['user.email', 'email', 'user_email']),
+        JsonHelper.getValue(json, [
+          'user.email',
+          'user_email',
+          'email',
+          'userEmail',
+          'author.email',
+        ]),
         defaultValue: 'Unknown user',
       ),
       type: JsonHelper.safeString(
-        JsonHelper.getValue(json, ['type', 'feedback_type']),
+        JsonHelper.getValue(json, [
+          'type',
+          'feedback_type',
+          'category',
+          'topic',
+        ]),
         defaultValue: 'general',
       ),
       message: JsonHelper.safeString(
-        JsonHelper.getValue(json, ['message', 'content', 'description']),
+        JsonHelper.getValue(json, [
+          'message',
+          'content',
+          'description',
+          'text',
+          'body',
+        ]),
       ),
       rating: JsonHelper.safeInt(
-        JsonHelper.getValue(json, ['rating', 'stars']),
+        JsonHelper.getValue(json, ['rating', 'stars', 'score']),
         defaultValue: 5,
-      ),
+      ).clamp(0, 5),
       status: JsonHelper.safeString(
         JsonHelper.getValue(json, ['status']),
         defaultValue: 'pending',
       ),
       priority: JsonHelper.safeString(
-        JsonHelper.getValue(json, ['priority']),
+        JsonHelper.getValue(json, ['priority', 'severity']),
         defaultValue: 'normal',
       ),
       createdAt: JsonHelper.safeString(
-        JsonHelper.getValue(json, ['created_at', 'createdAt']),
+        JsonHelper.getValue(json, ['created_at', 'createdAt', 'created']),
       ),
     );
+  }
+
+  bool get isPending {
+    final value = status.toLowerCase();
+    return value.contains('pending') ||
+        value.contains('open') ||
+        value.contains('new') ||
+        value.contains('unresolved');
   }
 }

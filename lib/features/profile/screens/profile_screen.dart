@@ -42,6 +42,7 @@ class _ProfileView extends StatelessWidget {
       id: authUser?.id ?? '',
       email: authUser?.email ?? '',
       fullName: authUser?.fullName ?? 'BanknoteAI User',
+      phone: '',
       avatarUrl: authUser?.avatarUrl ?? '',
       role: authUser?.role ?? 'user',
       provider: authUser?.provider ?? 'email',
@@ -56,13 +57,18 @@ class _ProfileView extends StatelessWidget {
     if (authUser != null) {
       final authRole = authUser.role.toLowerCase().trim();
       final profileRole = user.role.toLowerCase().trim();
-      if ((authRole == 'admin' || authRole == 'superadmin') &&
+
+      if ((authRole == 'admin' ||
+          authRole == 'superadmin' ||
+          authRole == 'owner') &&
           profileRole != authRole) {
         user = user.copyWith(role: authUser.role);
       }
+
       if (user.avatarUrl.isEmpty && authUser.avatarUrl.isNotEmpty) {
         user = user.copyWith(avatarUrl: authUser.avatarUrl);
       }
+
       if (user.tokenBalance == 0 && authUser.tokenBalance > 0) {
         user = user.copyWith(tokenBalance: authUser.tokenBalance);
       }
@@ -125,12 +131,14 @@ class _ProfileView extends StatelessWidget {
         TokenInfoCard(
           tokenBalance: user.tokenBalance,
           onTopUp: () => Navigator.of(context).pushNamed(RouteNames.pricing),
-          onTransactions: () => Navigator.of(context).pushNamed(RouteNames.transactions),
+          onTransactions: () =>
+              Navigator.of(context).pushNamed(RouteNames.transactions),
         ),
         if (user.isAdmin) ...[
           const SizedBox(height: AppSizes.lg),
           _AdminAccessCard(
-            onTap: () => Navigator.of(context).pushNamed(RouteNames.adminDashboard),
+            onTap: () =>
+                Navigator.of(context).pushNamed(RouteNames.adminDashboard),
           ),
         ],
         const SizedBox(height: AppSizes.lg),
@@ -141,26 +149,21 @@ class _ProfileView extends StatelessWidget {
               SettingsTile(
                 icon: Icons.edit_rounded,
                 title: 'Edit Profile',
-                subtitle: 'Update your name and public account information',
-                onTap: () {
-                  Navigator.of(context).push(
+                subtitle: 'Update your name, phone, and avatar URL',
+                onTap: () async {
+                  final changed = await Navigator.of(context).push<bool>(
                     MaterialPageRoute(
                       builder: (_) => EditProfileScreen(user: user),
                     ),
                   );
+
+                  if (changed == true && context.mounted) {
+                    await controller.fetchProfile();
+                  }
                 },
               ),
-              const _SectionDivider(),
-              SettingsTile(
-                icon: Icons.settings_rounded,
-                title: 'App Settings',
-                subtitle: 'Language, theme and display preferences',
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                  );
-                },
-              ),
+
+
               const _SectionDivider(),
               SettingsTile(
                 icon: Icons.menu_book_rounded,
@@ -187,7 +190,8 @@ class _ProfileView extends StatelessWidget {
                   subtitle: 'Open management dashboard',
                   iconColor: AppColors.danger,
                   trailingText: 'ADMIN',
-                  onTap: () => Navigator.of(context).pushNamed(RouteNames.adminDashboard),
+                  onTap: () =>
+                      Navigator.of(context).pushNamed(RouteNames.adminDashboard),
                 ),
               ],
             ],
@@ -215,7 +219,9 @@ class _ProfileView extends StatelessWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Sign out?'),
-        content: const Text('You will need to sign in again to continue using BanknoteAI.'),
+        content: const Text(
+          'You will need to sign in again to continue using BanknoteAI.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -260,7 +266,9 @@ class _AdminAccessCard extends StatelessWidget {
             end: Alignment.bottomRight,
           ),
           border: Border.all(
-            color: isDark ? AppColors.violet.withOpacity(0.35) : AppColors.warning.withOpacity(0.30),
+            color: isDark
+                ? AppColors.violet.withOpacity(0.35)
+                : AppColors.warning.withOpacity(0.30),
           ),
         ),
         child: Row(
@@ -272,7 +280,10 @@ class _AdminAccessCard extends StatelessWidget {
                 color: AppColors.warning.withOpacity(isDark ? 0.20 : 0.15),
                 borderRadius: BorderRadius.circular(AppSizes.radiusLg),
               ),
-              child: const Icon(Icons.admin_panel_settings_rounded, color: AppColors.warning),
+              child: const Icon(
+                Icons.admin_panel_settings_rounded,
+                color: AppColors.warning,
+              ),
             ),
             const SizedBox(width: AppSizes.md),
             Expanded(
@@ -282,7 +293,9 @@ class _AdminAccessCard extends StatelessWidget {
                   Text(
                     'Admin Lite',
                     style: TextStyle(
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                       fontSize: 17,
                       fontWeight: FontWeight.w900,
                     ),
@@ -291,7 +304,9 @@ class _AdminAccessCard extends StatelessWidget {
                   Text(
                     'Manage payments, feedback, and system health.',
                     style: TextStyle(
-                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondaryLight,
                       height: 1.35,
                       fontWeight: FontWeight.w600,
                     ),
@@ -299,7 +314,11 @@ class _AdminAccessCard extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight),
+            Icon(
+              Icons.chevron_right_rounded,
+              color:
+              isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight,
+            ),
           ],
         ),
       ),
@@ -307,13 +326,13 @@ class _AdminAccessCard extends StatelessWidget {
   }
 }
 
-
 class _SectionDivider extends StatelessWidget {
   const _SectionDivider();
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Divider(
       height: 1,
       thickness: 1,

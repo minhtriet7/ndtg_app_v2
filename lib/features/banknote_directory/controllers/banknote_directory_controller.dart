@@ -32,7 +32,16 @@ class BanknoteDirectoryController extends ChangeNotifier {
 
   int get totalNotes => _banknotes.length;
 
+  List<String> get availableCountries {
+    final list = SupportedCountryModel.fromBanknotes(_banknotes)
+        .map((item) => item.country)
+        .toList();
+    return list;
+  }
+
   Future<void> loadBanknotes() async {
+    if (_isLoading) return;
+
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -55,6 +64,10 @@ class BanknoteDirectoryController extends ChangeNotifier {
     if (_searchQuery == value) return;
     _searchQuery = value;
     notifyListeners();
+  }
+
+  void filterCountry(String country) {
+    setSearchQuery(country);
   }
 
   void clearSearch() {
