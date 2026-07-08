@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../controllers/payment_controller.dart';
@@ -30,26 +31,55 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     controller.startPollingPaymentStatus(
       paymentId: payment.id,
       onSuccess: _handleSuccess,
-      onFailed: () {
-        if (!mounted) return;
-        final error = context.read<PaymentController>().error ?? 'Payment failed or expired.';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error), backgroundColor: AppColors.danger),
-        );
-      },
+      onFailed: _handleFailure,
+    );
+  }
+
+  void _handleFailure() {
+    if (!mounted) return;
+    final error =
+        context.read<PaymentController>().error ?? 'paymentFailedOrExpired';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.tr(error)),
+        backgroundColor: AppColors.danger,
+      ),
+    );
+  }
+
+  Future<void> _checkStatusNow() async {
+    final controller = context.read<PaymentController>();
+    await controller.checkPaymentStatusNow(
+      onSuccess: _handleSuccess,
+      onFailed: _handleFailure,
+    );
+
+    if (!mounted || controller.error != 'paymentStatusCheckError') return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.tr('paymentStatusCheckError')),
+        backgroundColor: AppColors.warning,
+      ),
     );
   }
 
   Future<void> _handleSuccess() async {
-    await context.read<AuthController>().checkAuthStatus();
+    if (!mounted) return;
+    final authController = context.read<AuthController>();
+    final paymentController = context.read<PaymentController>();
+
+    await authController.checkAuthStatus();
+    await paymentController.fetchTransactions();
 
     if (!mounted) return;
 
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusLg)),
+      builder: (dialogContext) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+        ),
         child: AppCard(
           hasBorder: false,
           child: Column(
@@ -62,22 +92,33 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   color: AppColors.success.withOpacity(0.12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 48),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: AppColors.success,
+                  size: 48,
+                ),
               ),
               const SizedBox(height: AppSizes.md),
-              const Text('Payment completed', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 21)),
+              Text(
+                context.tr('paymentCompleted'),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 21,
+                ),
+              ),
               const SizedBox(height: 8),
-              const Text(
-                'Your tokens have been added to your account.',
+              Text(
+                context.tr('paymentCompletedDesc'),
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textSecondaryLight),
+                style: const TextStyle(color: AppColors.textSecondaryLight),
               ),
               const SizedBox(height: AppSizes.lg),
               AppButton(
-                text: 'Back to dashboard',
-                onPressed: () {
-                  context.read<PaymentController>().clearCheckout();
-                  Navigator.of(context).pop();
+                text: context.tr('backToDashboard'),
+                onPressed: () async {
+                  await paymentController.clearCheckout();
+                  if (!dialogContext.mounted) return;
+                  Navigator.of(dialogContext).pop();
                 },
               ),
             ],
@@ -106,7 +147,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     if (payment == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Checkout')),
+        appBar: AppBar(title: Text(context.tr('payment'))),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(AppSizes.lg),
@@ -114,13 +155,29 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.receipt_long_outlined, color: AppColors.textMutedLight, size: 56),
+                  const Icon(
+                    Icons.receipt_long_outlined,
+                    color: AppColors.textMutedLight,
+                    size: 56,
+                  ),
                   const SizedBox(height: AppSizes.md),
-                  const Text('No active checkout', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+                  Text(
+                    context.tr('noActiveCheckout'),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                    ),
+                  ),
                   const SizedBox(height: 8),
-                  const Text('Please choose a token package first.', textAlign: TextAlign.center),
+                  Text(
+                    context.tr('choosePackageFirst'),
+                    textAlign: TextAlign.center,
+                  ),
                   const SizedBox(height: AppSizes.lg),
-                  AppButton(text: 'Back', onPressed: () => Navigator.of(context).pop()),
+                  AppButton(
+                    text: context.tr('back'),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
                 ],
               ),
             ),
@@ -135,14 +192,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         return true;
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('Checkout')),
+        appBar: AppBar(title: Text(context.tr('payment'))),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSizes.lg),
           child: QrPaymentCard(
             payment: payment,
             isPolling: controller.isPolling,
-            onCancel: () {
-              controller.clearCheckout();
+            isCheckingStatus: controller.isCheckingStatus,
+            status: controller.latestPaymentStatus,
+            onCheckStatus: _checkStatusNow,
+            onBack: () {
+              controller.stopPolling();
               Navigator.of(context).pop();
             },
           ),

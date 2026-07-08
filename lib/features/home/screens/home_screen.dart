@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/localization/language_controller.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/theme_controller.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_skeleton.dart';
@@ -92,22 +93,28 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Expanded(
                               child: Text(
-                                'Recent Scans',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: -0.4,
-                                ),
+                                context.tr('recentScans'),
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.4,
+                                    ),
                               ),
                             ),
                             TextButton(
-                              onPressed: () => context.read<MainTabController>().goHistory(),
-                              child: const Text('View all'),
+                              onPressed: () =>
+                                  context.read<MainTabController>().goHistory(),
+                              child: Text(context.tr('viewAll')),
                             ),
                           ],
                         ),
                         const SizedBox(height: AppSizes.sm),
-                        if (controller.isLoading && controller.recentScans.isEmpty)
-                          const LoadingSkeletonList(itemCount: 3, itemHeight: 86)
+                        if (controller.isLoading &&
+                            controller.recentScans.isEmpty)
+                          const LoadingSkeletonList(
+                            itemCount: 3,
+                            itemHeight: 86,
+                          )
                         else
                           const RecentScansList(),
                       ],
@@ -130,26 +137,28 @@ class _HomeHeader extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final home = context.watch<HomeController>();
     final user = home.userInfo;
-    final name = user?.fullName.trim().isNotEmpty == true ? user!.fullName : 'there';
+    final name = user?.fullName.trim().isNotEmpty == true
+        ? user!.fullName
+        : context.tr('defaultUserName');
 
     return Row(
       children: [
         Container(
-          width: 48,
-          height: 48,
+          width: 46,
+          height: 46,
           decoration: BoxDecoration(
             gradient: AppColors.tealGradient,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primaryTeal.withOpacity(0.24),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
+                color: AppColors.primaryTeal.withOpacity(0.22),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
           child: const Icon(
-            Icons.account_balance_rounded,
+            Icons.account_balance_outlined,
             color: Colors.white,
             size: 23,
           ),
@@ -160,23 +169,28 @@ class _HomeHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'BanknoteAI Workspace',
+                context.tr('workspaceTitle'),
                 style: TextStyle(
-                  color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
-                  fontSize: 12,
+                  color: isDark
+                      ? AppColors.textMutedDark
+                      : AppColors.textMutedLight,
+                  fontSize: 11.5,
                   fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
-                'Welcome back, $name',
+                '${context.tr('welcomeBack')}, $name',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                  fontSize: 20,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
+                  fontSize: 19,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: -0.5,
+                  letterSpacing: -0.4,
                 ),
               ),
             ],
@@ -208,7 +222,9 @@ class _LanguagePill extends StatelessWidget {
         decoration: BoxDecoration(
           color: isDark ? AppColors.cardDark : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+          border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.borderLight,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -216,7 +232,9 @@ class _LanguagePill extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimaryLight,
                 fontSize: 12,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0.2,
@@ -226,7 +244,9 @@ class _LanguagePill extends StatelessWidget {
             Text(
               label == 'EN' ? 'VI' : 'EN',
               style: TextStyle(
-                color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+                color: isDark
+                    ? AppColors.textMutedDark
+                    : AppColors.textMutedLight,
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
               ),
@@ -256,12 +276,14 @@ class _ThemePill extends StatelessWidget {
         decoration: BoxDecoration(
           color: isDark ? AppColors.cardDark : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+          border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.borderLight,
+          ),
         ),
         child: Icon(
-          isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+          isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
           size: 18,
-          color: isDark ? AppColors.primaryLightTeal : AppColors.textSecondaryLight,
+          color: isDark ? AppColors.warning : AppColors.textSecondaryLight,
         ),
       ),
     );

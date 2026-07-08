@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../core/utils/date_formatter.dart';
 import '../../core/utils/money_formatter.dart';
 import '../../core/widgets/app_badge.dart';
@@ -37,7 +38,7 @@ class _AdminPendingTransactionsScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pending Transactions'),
+        title: Text(context.tr('pendingTransactions')),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
@@ -60,10 +61,7 @@ class _AdminPendingTransactionsScreenState
         itemCount: 5,
         itemBuilder: (_, __) => const Padding(
           padding: EdgeInsets.only(bottom: AppSizes.md),
-          child: LoadingSkeleton(
-            height: 180,
-            borderRadius: AppSizes.radiusXl,
-          ),
+          child: LoadingSkeleton(height: 180, borderRadius: AppSizes.radiusXl),
         ),
       );
     }
@@ -76,9 +74,9 @@ class _AdminPendingTransactionsScreenState
     }
 
     if (controller.pendingTransactions.isEmpty) {
-      return const EmptyState(
-        title: 'No pending payments',
-        message: 'All user payments have been processed from the real API.',
+      return EmptyState(
+        title: context.tr('noPendingPayments'),
+        message: context.tr('noPendingPaymentsDesc'),
         icon: Icons.verified_outlined,
       );
     }
@@ -106,10 +104,7 @@ class _TransactionCard extends StatelessWidget {
   final AdminTransactionModel transaction;
   final AdminLiteController controller;
 
-  const _TransactionCard({
-    required this.transaction,
-    required this.controller,
-  });
+  const _TransactionCard({required this.transaction, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -173,16 +168,26 @@ class _TransactionCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSizes.md),
-          _InfoRow(label: 'Package', value: transaction.packageName),
           _InfoRow(
-            label: 'Amount',
+            label: context.tr('package'),
+            value: transaction.packageName,
+          ),
+          _InfoRow(
+            label: context.tr('amount'),
             value: MoneyFormatter.formatVnd(transaction.amount),
             highlight: true,
           ),
-          _InfoRow(label: 'Tokens', value: '+${transaction.tokensAdded} tokens'),
-          _InfoRow(label: 'Gateway', value: transaction.gateway.toUpperCase()),
           _InfoRow(
-            label: 'Created',
+            label: context.tr('tokens'),
+            value:
+                '+${transaction.tokensAdded} ${context.tr('tokens').toLowerCase()}',
+          ),
+          _InfoRow(
+            label: context.tr('gateway'),
+            value: transaction.gateway.toUpperCase(),
+          ),
+          _InfoRow(
+            label: context.tr('created'),
             value: DateFormatter.formatDateTime(transaction.createdAt),
           ),
           const SizedBox(height: AppSizes.lg),
@@ -194,7 +199,7 @@ class _TransactionCard extends StatelessWidget {
                       ? null
                       : () => _confirmCancel(context),
                   icon: const Icon(Icons.close_rounded),
-                  label: const Text('Cancel'),
+                  label: Text(context.tr('cancel')),
                 ),
               ),
               const SizedBox(width: AppSizes.md),
@@ -204,7 +209,11 @@ class _TransactionCard extends StatelessWidget {
                       ? null
                       : () => _confirmPaid(context),
                   icon: const Icon(Icons.check_circle_outline_rounded),
-                  label: Text(controller.isActionLoading ? 'Saving...' : 'Mark Paid'),
+                  label: Text(
+                    controller.isActionLoading
+                        ? context.tr('saving')
+                        : context.tr('markPaid'),
+                  ),
                 ),
               ),
             ],
@@ -217,10 +226,9 @@ class _TransactionCard extends StatelessWidget {
   Future<void> _confirmPaid(BuildContext context) async {
     final ok = await _confirm(
       context,
-      title: 'Mark payment as paid?',
-      message:
-      'This will confirm the transaction and should update the user token balance on the backend.',
-      confirmText: 'Mark Paid',
+      title: context.tr('markPaymentPaidTitle'),
+      message: context.tr('markPaymentPaidDesc'),
+      confirmText: context.tr('markPaid'),
     );
 
     if (ok != true || !context.mounted) return;
@@ -232,7 +240,9 @@ class _TransactionCard extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          success ? 'Transaction marked as paid.' : controller.error ?? 'Action failed.',
+          success
+              ? context.tr('transactionMarkedPaid')
+              : controller.error ?? context.tr('actionFailed'),
         ),
       ),
     );
@@ -241,9 +251,9 @@ class _TransactionCard extends StatelessWidget {
   Future<void> _confirmCancel(BuildContext context) async {
     final ok = await _confirm(
       context,
-      title: 'Cancel transaction?',
-      message: 'This will cancel the pending payment on the backend.',
-      confirmText: 'Cancel Transaction',
+      title: context.tr('cancelTransactionTitle'),
+      message: context.tr('cancelTransactionDesc'),
+      confirmText: context.tr('cancelTransaction'),
     );
 
     if (ok != true || !context.mounted) return;
@@ -255,18 +265,20 @@ class _TransactionCard extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          success ? 'Transaction cancelled.' : controller.error ?? 'Action failed.',
+          success
+              ? context.tr('transactionCancelled')
+              : controller.error ?? context.tr('actionFailed'),
         ),
       ),
     );
   }
 
   Future<bool?> _confirm(
-      BuildContext context, {
-        required String title,
-        required String message,
-        required String confirmText,
-      }) {
+    BuildContext context, {
+    required String title,
+    required String message,
+    required String confirmText,
+  }) {
     return showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -275,7 +287,7 @@ class _TransactionCard extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Back'),
+            child: Text(context.tr('back')),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
@@ -313,7 +325,9 @@ class _InfoRow extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+                color: isDark
+                    ? AppColors.textMutedDark
+                    : AppColors.textMutedLight,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -328,8 +342,8 @@ class _InfoRow extends StatelessWidget {
                 color: highlight
                     ? AppColors.primaryTeal
                     : (isDark
-                    ? AppColors.textPrimaryDark
-                    : AppColors.textPrimaryLight),
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight),
               ),
             ),
           ),

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../core/utils/date_formatter.dart';
 import '../../core/widgets/app_badge.dart';
 import '../../core/widgets/app_card.dart';
@@ -36,7 +37,7 @@ class _AdminPendingFeedbackScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pending Feedback'),
+        title: Text(context.tr('pendingFeedback')),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
@@ -59,10 +60,7 @@ class _AdminPendingFeedbackScreenState
         itemCount: 5,
         itemBuilder: (_, __) => const Padding(
           padding: EdgeInsets.only(bottom: AppSizes.md),
-          child: LoadingSkeleton(
-            height: 174,
-            borderRadius: AppSizes.radiusXl,
-          ),
+          child: LoadingSkeleton(height: 174, borderRadius: AppSizes.radiusXl),
         ),
       );
     }
@@ -75,9 +73,9 @@ class _AdminPendingFeedbackScreenState
     }
 
     if (controller.pendingFeedbacks.isEmpty) {
-      return const EmptyState(
-        title: 'No pending feedback',
-        message: 'There are no unresolved user reports from the real API.',
+      return EmptyState(
+        title: context.tr('noPendingFeedback'),
+        message: context.tr('noPendingFeedbackDesc'),
         icon: Icons.mark_chat_read_outlined,
       );
     }
@@ -105,10 +103,7 @@ class _FeedbackCard extends StatelessWidget {
   final AdminFeedbackModel feedback;
   final AdminLiteController controller;
 
-  const _FeedbackCard({
-    required this.feedback,
-    required this.controller,
-  });
+  const _FeedbackCard({required this.feedback, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -190,7 +185,7 @@ class _FeedbackCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: List.generate(
                   5,
-                      (index) => Icon(
+                  (index) => Icon(
                     index < feedback.rating
                         ? Icons.star_rounded
                         : Icons.star_border_rounded,
@@ -203,13 +198,16 @@ class _FeedbackCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.md),
           Text(
-            feedback.message.isEmpty ? 'No message content.' : feedback.message,
+            feedback.message.isEmpty
+                ? context.tr('noMessageContent')
+                : feedback.message,
             style: TextStyle(
               fontSize: 14,
               height: 1.45,
               fontWeight: FontWeight.w600,
-              color:
-              isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
             ),
           ),
           const SizedBox(height: AppSizes.lg),
@@ -221,7 +219,7 @@ class _FeedbackCard extends StatelessWidget {
                       ? null
                       : () => _setHighPriority(context),
                   icon: const Icon(Icons.priority_high_rounded),
-                  label: const Text('High'),
+                  label: Text(context.tr('highPriority')),
                 ),
               ),
               const SizedBox(width: AppSizes.md),
@@ -231,7 +229,11 @@ class _FeedbackCard extends StatelessWidget {
                       ? null
                       : () => _resolve(context),
                   icon: const Icon(Icons.check_circle_outline_rounded),
-                  label: Text(controller.isActionLoading ? 'Saving...' : 'Resolve'),
+                  label: Text(
+                    controller.isActionLoading
+                        ? context.tr('saving')
+                        : context.tr('resolve'),
+                  ),
                 ),
               ),
             ],
@@ -254,14 +256,19 @@ class _FeedbackCard extends StatelessWidget {
   }
 
   Future<void> _setHighPriority(BuildContext context) async {
-    final success = await controller.updateFeedbackPriority(feedback.id, 'high');
+    final success = await controller.updateFeedbackPriority(
+      feedback.id,
+      'high',
+    );
 
     if (!context.mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          success ? 'Priority updated.' : controller.error ?? 'Action failed.',
+          success
+              ? context.tr('priorityUpdated')
+              : controller.error ?? context.tr('actionFailed'),
         ),
       ),
     );
@@ -275,7 +282,9 @@ class _FeedbackCard extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          success ? 'Feedback resolved.' : controller.error ?? 'Action failed.',
+          success
+              ? context.tr('feedbackResolved')
+              : controller.error ?? context.tr('actionFailed'),
         ),
       ),
     );

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../routes/route_names.dart';
 import '../controllers/auth_controller.dart';
@@ -10,10 +11,7 @@ import '../controllers/auth_controller.dart';
 class GoogleSuccessScreen extends StatefulWidget {
   final Object? arguments;
 
-  const GoogleSuccessScreen({
-    super.key,
-    this.arguments,
-  });
+  const GoogleSuccessScreen({super.key, this.arguments});
 
   @override
   State<GoogleSuccessScreen> createState() => _GoogleSuccessScreenState();
@@ -36,17 +34,15 @@ class _GoogleSuccessScreenState extends State<GoogleSuccessScreen> {
     if (!mounted) return;
 
     if (auth.isAuthenticated) {
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        RouteNames.main,
-            (route) => false,
-      );
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(RouteNames.main, (route) => false);
       return;
     }
 
     setState(() {
       _isChecking = false;
-      _message =
-      'Google sign-in did not return an active session. Please sign in again.';
+      _message = context.tr('googleSessionMissing');
     });
   }
 
@@ -61,15 +57,7 @@ class _GoogleSuccessScreenState extends State<GoogleSuccessScreen> {
         decoration: BoxDecoration(
           gradient: isDark
               ? AppColors.darkGradient
-              : const LinearGradient(
-            colors: [
-              Color(0xFFF8FBFF),
-              Color(0xFFEFFFFB),
-              Color(0xFFF8FBFF),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+              : AppColors.lightBrandGradient,
         ),
         child: SafeArea(
           child: Center(
@@ -83,8 +71,9 @@ class _GoogleSuccessScreenState extends State<GoogleSuccessScreen> {
                     color: isDark ? AppColors.cardDark : Colors.white,
                     borderRadius: BorderRadius.circular(AppSizes.radiusXxl),
                     border: Border.all(
-                      color:
-                      isDark ? AppColors.borderDark : AppColors.borderLight,
+                      color: isDark
+                          ? AppColors.borderDark
+                          : AppColors.borderLight,
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -127,8 +116,8 @@ class _GoogleSuccessScreenState extends State<GoogleSuccessScreen> {
                       const SizedBox(height: 24),
                       Text(
                         _isChecking
-                            ? 'Completing sign-in'
-                            : 'Google sign-in requires action',
+                            ? context.tr('googleCompletingSignIn')
+                            : context.tr('googleSignInAction'),
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w900,
@@ -137,8 +126,7 @@ class _GoogleSuccessScreenState extends State<GoogleSuccessScreen> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        _message ??
-                            'Please wait while BanknoteAI verifies your secure session.',
+                        _message ?? context.tr('googleVerifySession'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: isDark
@@ -155,12 +143,12 @@ class _GoogleSuccessScreenState extends State<GoogleSuccessScreen> {
                         )
                       else
                         AppButton(
-                          text: 'Back to sign in',
+                          text: context.tr('backToSignIn'),
                           icon: Icons.login_rounded,
                           onPressed: () {
                             Navigator.of(context).pushNamedAndRemoveUntil(
                               RouteNames.login,
-                                  (route) => false,
+                              (route) => false,
                             );
                           },
                         ),

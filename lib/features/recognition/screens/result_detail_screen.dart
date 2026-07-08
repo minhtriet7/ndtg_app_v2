@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
@@ -20,26 +21,27 @@ import '../widgets/agent_status_card.dart';
 class ResultDetailScreen extends StatelessWidget {
   final BanknoteResultModel result;
 
-  const ResultDetailScreen({
-    super.key,
-    required this.result,
-  });
+  const ResultDetailScreen({super.key, required this.result});
 
   @override
   Widget build(BuildContext context) {
     final rawJson = const JsonEncoder.withIndent('  ').convert(result.rawJson);
+    final showRecognizedMoney =
+        !result.isNoBanknote &&
+        !result.isTechnicalFailure &&
+        !result.needsUserReview;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Result Details'),
+        title: Text(context.tr('resultDetails')),
         actions: [
           IconButton(
-            tooltip: 'Copy JSON',
+            tooltip: context.tr('copyJson'),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: rawJson));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Raw JSON copied.')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(context.tr('jsonCopied'))));
             },
             icon: const Icon(Icons.copy_rounded),
           ),
@@ -58,6 +60,10 @@ class ResultDetailScreen extends StatelessWidget {
             children: [
               _ReportHeader(result: result),
               const SizedBox(height: AppSizes.lg),
+              if (result.isPartial || result.isCompletedWithLimit) ...[
+                _PartialLimitDetailCard(result: result),
+                const SizedBox(height: AppSizes.lg),
+              ],
               if (result.hasTokenUsage) ...[
                 _TokenUsageReportCard(result: result),
                 const SizedBox(height: AppSizes.lg),
@@ -66,16 +72,27 @@ class ResultDetailScreen extends StatelessWidget {
                 _UploadedBanknoteCard(result: result),
                 const SizedBox(height: AppSizes.lg),
               ],
-              _FinalDecisionCard(result: result),
-              const SizedBox(height: AppSizes.lg),
-              _VndConversionDetailCard(result: result),
-              const SizedBox(height: AppSizes.lg),
-              if (result.finalResult.summary.isNotEmpty) ...[
+              if (!showRecognizedMoney) ...[
+                _NonSuccessDetailCard(result: result),
+                const SizedBox(height: AppSizes.lg),
+              ],
+              if (showRecognizedMoney) ...[
+                _FinalDecisionCard(result: result),
+                const SizedBox(height: AppSizes.lg),
+                _VndConversionDetailCard(result: result),
+                const SizedBox(height: AppSizes.lg),
+              ],
+              if (showRecognizedMoney &&
+                  result.finalResult.summary.isNotEmpty) ...[
                 _DetectedObjectsDetailCard(result: result),
                 const SizedBox(height: AppSizes.lg),
               ],
               _AgentOutputsSection(result: result),
               const SizedBox(height: AppSizes.lg),
+              if (result.hasDiagnostics) ...[
+                _DiagnosticsCard(result: result),
+                const SizedBox(height: AppSizes.lg),
+              ],
               _RawJsonCard(rawJson: rawJson),
               const SizedBox(height: AppSizes.lg),
               _ContinueActions(result: result, rawJson: rawJson),
@@ -95,6 +112,22 @@ class _ReportHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final finalResult = result.finalResult;
+    final isNonSuccess =
+        result.isNoBanknote ||
+        result.isTechnicalFailure ||
+        result.needsUserReview;
+    final title = result.isNoBanknote
+        ? context.tr('noValidBanknoteTitle')
+        : isNonSuccess
+        ? context.tr(
+            result.needsUserReview
+                ? 'betterImageTitle'
+                : 'technicalFailureTitle',
+          )
+        : finalResult.displayTitle;
+    final subtitle = isNonSuccess
+        ? context.trStatus(result.status)
+        : '${finalResult.country} · ${finalResult.matchedAgents}';
 
     return Container(
       padding: const EdgeInsets.all(AppSizes.lg),
@@ -112,9 +145,9 @@ class _ReportHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'ANALYSIS REPORT',
-            style: TextStyle(
+          Text(
+            context.tr('analysisReport'),
+            style: const TextStyle(
               color: Colors.white70,
               fontSize: 11,
               fontWeight: FontWeight.w900,
@@ -123,7 +156,7 @@ class _ReportHeader extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.sm),
           Text(
-            finalResult.displayTitle,
+            title,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 28,
@@ -133,7 +166,7 @@ class _ReportHeader extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.sm),
           Text(
-            '${finalResult.country} · ${finalResult.matchedAgents}',
+            subtitle,
             style: const TextStyle(
               color: Colors.white70,
               fontSize: 14,
@@ -145,7 +178,7 @@ class _ReportHeader extends StatelessWidget {
             children: [
               _HeroPill(
                 icon: Icons.verified_rounded,
-                label: result.status,
+                label: context.trStatus(result.status),
               ),
               const SizedBox(width: AppSizes.sm),
               _HeroPill(
@@ -154,6 +187,154 @@ class _ReportHeader extends StatelessWidget {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PartialLimitDetailCard extends StatelessWidget {
+  final BanknoteResultModel result;
+
+  const _PartialLimitDetailCard({required this.result});
+
+  @override
+  Widget build(BuildContext context) {
+    final isLimit = result.isCompletedWithLimit;
+    final objects = isLimit ? result.overflowObjects : result.unresolvedObjects;
+    final title = context.tr(
+      isLimit ? 'limitResultTitle' : 'partialResultTitle',
+    );
+    final message = isLimit
+        ? context.trArgs('limitResultMessage', {
+            'count': result.overflowObjects.length,
+          })
+        : context.tr('partialResultMessage');
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                isLimit ? Icons.filter_3_rounded : Icons.info_outline_rounded,
+                color: AppColors.warning,
+                size: 30,
+              ),
+              const SizedBox(width: AppSizes.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: AppColors.warning,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(message, style: const TextStyle(height: 1.45)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (objects.isNotEmpty) ...[
+            const SizedBox(height: AppSizes.md),
+            SelectableText(
+              const JsonEncoder.withIndent('  ').convert(objects),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _NonSuccessDetailCard extends StatelessWidget {
+  final BanknoteResultModel result;
+
+  const _NonSuccessDetailCard({required this.result});
+
+  @override
+  Widget build(BuildContext context) {
+    final isReview = result.needsUserReview;
+    final color = result.isNoBanknote || isReview
+        ? AppColors.warning
+        : AppColors.danger;
+    final title = result.isNoBanknote
+        ? context.tr('noValidBanknoteTitle')
+        : context.tr(isReview ? 'betterImageTitle' : 'technicalFailureTitle');
+    final fallbackMessage = result.isNoBanknote
+        ? context.tr('noBanknoteMessage')
+        : context.tr('resultFailureMessage');
+    final evidence = <Map<String, dynamic>>[
+      ...result.rejectedObjects,
+      ...result.unresolvedObjects,
+    ];
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                result.isNoBanknote
+                    ? Icons.image_not_supported_outlined
+                    : isReview
+                    ? Icons.photo_camera_back_outlined
+                    : Icons.error_outline_rounded,
+                color: color,
+                size: 30,
+              ),
+              const SizedBox(width: AppSizes.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      result.message.trim().isNotEmpty
+                          ? result.message
+                          : fallbackMessage,
+                      style: const TextStyle(height: 1.45),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (evidence.isNotEmpty || result.cropChecker.isNotEmpty) ...[
+            const SizedBox(height: AppSizes.lg),
+            Text(
+              context.tr('rejectedReasonTitle'),
+              style: const TextStyle(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: AppSizes.sm),
+            SelectableText(
+              const JsonEncoder.withIndent('  ').convert({
+                if (evidence.isNotEmpty) 'objects': evidence,
+                if (result.cropChecker.isNotEmpty)
+                  'crop_checker': result.cropChecker,
+              }),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
         ],
       ),
     );
@@ -171,16 +352,13 @@ class _TokenUsageReportCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Token Usage',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
+          Text(
+            context.tr('tokenUsage'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 6),
           Text(
-            'Actual scan billing and AI token usage for this result.',
+            context.tr('actualTokenCharged'),
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: AppSizes.md),
@@ -188,14 +366,14 @@ class _TokenUsageReportCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _GridMetric(
-                  label: 'Charged',
-                  value: '${result.tokensCharged == 0 ? 1 : result.tokensCharged}',
+                  label: context.tr('charged'),
+                  value: '${result.tokensCharged}',
                 ),
               ),
               const SizedBox(width: AppSizes.sm),
               Expanded(
                 child: _GridMetric(
-                  label: 'Mode',
+                  label: context.tr('mode'),
                   value: result.billingMode,
                 ),
               ),
@@ -206,15 +384,19 @@ class _TokenUsageReportCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _GridMetric(
-                  label: 'Before',
-                  value: result.balanceBefore == 0 ? 'N/A' : '${result.balanceBefore}',
+                  label: context.tr('before'),
+                  value: result.balanceBefore == 0
+                      ? 'N/A'
+                      : '${result.balanceBefore}',
                 ),
               ),
               const SizedBox(width: AppSizes.sm),
               Expanded(
                 child: _GridMetric(
-                  label: 'After',
-                  value: result.balanceAfter == 0 ? 'N/A' : '${result.balanceAfter}',
+                  label: context.tr('after'),
+                  value: result.balanceAfter == 0
+                      ? 'N/A'
+                      : '${result.balanceAfter}',
                 ),
               ),
             ],
@@ -224,15 +406,19 @@ class _TokenUsageReportCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _GridMetric(
-                  label: 'Input',
-                  value: result.inputTokens == 0 ? 'N/A' : '${result.inputTokens}',
+                  label: context.tr('input'),
+                  value: result.inputTokens == 0
+                      ? 'N/A'
+                      : '${result.inputTokens}',
                 ),
               ),
               const SizedBox(width: AppSizes.sm),
               Expanded(
                 child: _GridMetric(
-                  label: 'Output',
-                  value: result.outputTokens == 0 ? 'N/A' : '${result.outputTokens}',
+                  label: context.tr('output'),
+                  value: result.outputTokens == 0
+                      ? 'N/A'
+                      : '${result.outputTokens}',
                 ),
               ),
             ],
@@ -255,14 +441,11 @@ class _UploadedBanknoteCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.all(AppSizes.md),
+          Padding(
+            padding: const EdgeInsets.all(AppSizes.md),
             child: Text(
-              'Uploaded Banknote',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-              ),
+              context.tr('uploadedBanknote'),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
             ),
           ),
           NetworkImageView(
@@ -287,36 +470,42 @@ class _FinalDecisionCard extends StatelessWidget {
     final finalResult = result.finalResult;
 
     return AppCard(
+      glowColor: AppColors.success, // Premium consensus green glow border
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Final Decision',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
+          Text(
+            context.tr('finalDecision'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: AppSizes.md),
           _DetailGrid(
             items: [
-              _DetailGridItem('Country', finalResult.country),
+              _DetailGridItem(context.tr('country'), finalResult.country),
               _DetailGridItem(
-                'Denomination',
+                context.tr('denomination'),
                 FinalResultModel.formatMoneyLabel(
                   finalResult.denomination,
                   finalResult.currency,
                 ),
               ),
-              _DetailGridItem('Currency', finalResult.currency),
-              _DetailGridItem('Consensus', finalResult.matchedAgents),
               _DetailGridItem(
-                'Material',
+                context.tr('currencyLabel'),
+                finalResult.currency,
+              ),
+              _DetailGridItem(
+                context.tr('consensus'),
+                finalResult.matchedAgents,
+              ),
+              _DetailGridItem(
+                context.tr('material'),
                 finalResult.material.isEmpty ? 'Unknown' : finalResult.material,
               ),
               _DetailGridItem(
-                'Origin',
-                finalResult.origin.isEmpty ? finalResult.country : finalResult.origin,
+                context.tr('origin'),
+                finalResult.origin.isEmpty
+                    ? finalResult.country
+                    : finalResult.origin,
               ),
             ],
           ),
@@ -339,9 +528,9 @@ class _FinalDecisionCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Referee Conclusion',
-                    style: TextStyle(
+                  Text(
+                    context.tr('refereeConclusion'),
+                    style: const TextStyle(
                       color: AppColors.primaryTeal,
                       fontSize: 12,
                       fontWeight: FontWeight.w900,
@@ -371,7 +560,8 @@ class _VndConversionDetailCard extends StatefulWidget {
   const _VndConversionDetailCard({required this.result});
 
   @override
-  State<_VndConversionDetailCard> createState() => _VndConversionDetailCardState();
+  State<_VndConversionDetailCard> createState() =>
+      _VndConversionDetailCardState();
 }
 
 class _VndConversionDetailCardState extends State<_VndConversionDetailCard> {
@@ -394,7 +584,7 @@ class _VndConversionDetailCardState extends State<_VndConversionDetailCard> {
     if (amount <= 0 || currency.isEmpty || currency == 'UNKNOWN') {
       setState(() {
         _loading = false;
-        _error = 'Exchange calculation unavailable.';
+        _error = context.tr('exchangeUnavailable');
       });
       return;
     }
@@ -417,7 +607,7 @@ class _VndConversionDetailCardState extends State<_VndConversionDetailCard> {
     setState(() {
       _loading = false;
       _converted = value;
-      _error = value == null ? 'Exchange rate unavailable.' : null;
+      _error = value == null ? context.tr('exchangeUnavailable') : null;
     });
   }
 
@@ -446,18 +636,18 @@ class _VndConversionDetailCardState extends State<_VndConversionDetailCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'VND Conversion',
-                  style: TextStyle(
+                Text(
+                  context.tr('vndConversion'),
+                  style: const TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 16,
                   ),
                 ),
                 const SizedBox(height: 5),
                 if (_loading)
-                  const Text(
-                    'Checking exchange rate...',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                  Text(
+                    context.tr('checkingRate'),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   )
                 else if (_error != null)
                   Text(
@@ -501,15 +691,12 @@ class _DetectedObjectsDetailCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${summary.length} detected banknote${summary.length > 1 ? 's' : ''}',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
+            '${summary.length} ${context.tr('detectedBanknotes')}',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: AppSizes.sm),
           Text(
-            'Each object is analyzed independently before the final aggregator decision.',
+            context.tr('eachObjectAnalyzed'),
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: AppSizes.md),
@@ -532,28 +719,126 @@ class _AgentOutputsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (result.agentResults.isEmpty) {
-      return const AppCard(
-        child: Text('No agent output returned.'),
-      );
+      return AppCard(child: Text(context.tr('noAgentOutput')));
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Agent Outputs',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-          ),
+        Text(
+          context.tr('agentPipeline'),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: AppSizes.sm),
         ...result.agentResults.map(
-              (agent) => Padding(
+          (agent) => Padding(
             padding: const EdgeInsets.only(bottom: AppSizes.sm),
             child: AgentStatusCard(agent: agent),
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _DiagnosticsCard extends StatelessWidget {
+  final BanknoteResultModel result;
+
+  const _DiagnosticsCard({required this.result});
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <Widget>[];
+
+    void addRow(String label, String value) {
+      if (value.trim().isEmpty) return;
+      if (rows.isNotEmpty) rows.add(const Divider(height: AppSizes.lg));
+      rows.add(_DiagnosticRow(label: label, value: value));
+    }
+
+    addRow(context.tr('winnerVote'), result.winnerVoteKey);
+    addRow(context.tr('matchedAgents'), result.matchedAgentKeys.join(', '));
+    if (result.billableAiTokens > 0) {
+      addRow(
+        context.tr('billableAiTokens'),
+        result.billableAiTokens.toString(),
+      );
+    }
+    addRow(context.tr('billingSkipReason'), result.billingSkipReason);
+    if (result.modelTrace.isNotEmpty) {
+      addRow(
+        context.tr('modelTrace'),
+        context
+            .tr('diagnosticEntries')
+            .replaceAll('{count}', result.modelTrace.length.toString()),
+      );
+    }
+    if (result.agentUsages.isNotEmpty) {
+      addRow(
+        context.tr('agentUsage'),
+        context
+            .tr('diagnosticEntries')
+            .replaceAll('{count}', result.agentUsages.length.toString()),
+      );
+    }
+    if (result.limitInfo.isNotEmpty) {
+      addRow(context.tr('limitInfo'), jsonEncode(result.limitInfo));
+    }
+    if (result.objectStatusSummary.isNotEmpty) {
+      addRow(
+        context.tr('objectStatusSummary'),
+        jsonEncode(result.objectStatusSummary),
+      );
+    }
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.fact_check_outlined,
+                color: AppColors.primaryTeal,
+              ),
+              const SizedBox(width: AppSizes.sm),
+              Text(
+                context.tr('diagnostics'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.md),
+          ...rows,
+        ],
+      ),
+    );
+  }
+}
+
+class _DiagnosticRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _DiagnosticRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: AppColors.primaryTeal,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 4),
+        SelectableText(value, style: Theme.of(context).textTheme.bodyMedium),
       ],
     );
   }
@@ -581,10 +866,10 @@ class _RawJsonCardState extends State<_RawJsonCard> {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Structured JSON Output',
-                  style: TextStyle(
+                  context.tr('structuredOutput'),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
@@ -595,11 +880,11 @@ class _RawJsonCardState extends State<_RawJsonCard> {
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: widget.rawJson));
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Raw JSON copied.')),
+                    SnackBar(content: Text(context.tr('jsonCopied'))),
                   );
                 },
                 icon: const Icon(Icons.copy_rounded, size: 16),
-                label: const Text('Copy'),
+                label: Text(context.tr('copy')),
               ),
             ],
           ),
@@ -623,7 +908,7 @@ class _RawJsonCardState extends State<_RawJsonCard> {
               color: Colors.white,
             ),
             label: Text(
-              _expanded ? 'Collapse JSON' : 'Expand JSON',
+              _expanded ? context.tr('collapseJson') : context.tr('expandJson'),
               style: const TextStyle(color: Colors.white),
             ),
           ),
@@ -637,39 +922,43 @@ class _ContinueActions extends StatelessWidget {
   final BanknoteResultModel result;
   final String rawJson;
 
-  const _ContinueActions({
-    required this.result,
-    required this.rawJson,
-  });
+  const _ContinueActions({required this.result, required this.rawJson});
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return AppCard(
-      backgroundColor: const Color(0xFF0F172A),
-      hasBorder: false,
+      backgroundColor: isDark ? const Color(0xFF121214) : Colors.white,
+      hasBorder: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'Continue scanning',
+          Text(
+            context.tr('continueScanning'),
             style: TextStyle(
-              color: Colors.white,
+              color: isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight,
               fontSize: 20,
               fontWeight: FontWeight.w900,
+              letterSpacing: -0.4,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Start another scan or review saved results in your history.',
+          Text(
+            context.tr('savedToHistoryDesc'),
             style: TextStyle(
-              color: Color(0xFFCBD5E1),
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
               height: 1.4,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: AppSizes.lg),
           AppButton(
-            text: 'Scan Another Banknote',
+            text: context.tr('scanAnother'),
             icon: Icons.document_scanner_rounded,
             onPressed: () {
               context.read<RecognitionController>().clearState();
@@ -681,7 +970,7 @@ class _ContinueActions extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.sm),
           AppButton(
-            text: 'View Scan History',
+            text: context.tr('recognitionHistory'),
             type: AppButtonType.outline,
             icon: Icons.history_rounded,
             onPressed: () {
@@ -693,14 +982,14 @@ class _ContinueActions extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.sm),
           AppButton(
-            text: 'Copy JSON',
+            text: context.tr('copyJson'),
             type: AppButtonType.outline,
             icon: Icons.copy_rounded,
             onPressed: () {
               Clipboard.setData(ClipboardData(text: rawJson));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Recognition JSON copied.')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(context.tr('jsonCopied'))));
             },
           ),
         ],
@@ -713,10 +1002,7 @@ class _HeroPill extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const _HeroPill({
-    required this.icon,
-    required this.label,
-  });
+  const _HeroPill({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -806,10 +1092,7 @@ class _GridMetric extends StatelessWidget {
   final String label;
   final String value;
 
-  const _GridMetric({
-    required this.label,
-    required this.value,
-  });
+  const _GridMetric({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -831,7 +1114,9 @@ class _GridMetric extends StatelessWidget {
           Text(
             label.toUpperCase(),
             style: TextStyle(
-              color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+              color: isDark
+                  ? AppColors.textMutedDark
+                  : AppColors.textMutedLight,
               fontSize: 10,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.7,
@@ -843,7 +1128,9 @@ class _GridMetric extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+              color: isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -860,13 +1147,15 @@ class _ObjectRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final denomination =
-    (item['denomination'] ?? item['menh_gia'] ?? 'Unknown').toString();
+    final denomination = (item['denomination'] ?? item['menh_gia'] ?? 'Unknown')
+        .toString();
     final currency = (item['currency'] ?? '').toString();
-    final country = (item['country'] ?? item['quoc_gia'] ?? 'Unknown').toString();
+    final country = (item['country'] ?? item['quoc_gia'] ?? 'Unknown')
+        .toString();
     final objectIndex = (item['object_index'] ?? '').toString();
     final matched =
-    (item['matched_agents'] ?? item['so_luong_dong_thuan'] ?? '').toString();
+        (item['matched_agents'] ?? item['so_luong_dong_thuan'] ?? '')
+            .toString();
 
     return Container(
       padding: const EdgeInsets.all(AppSizes.md),
@@ -906,9 +1195,7 @@ class _ObjectRow extends StatelessWidget {
               children: [
                 Text(
                   FinalResultModel.formatMoneyLabel(denomination, currency),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 3),
                 Text(

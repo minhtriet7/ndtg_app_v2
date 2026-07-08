@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 import '../../../core/constants/api_endpoints.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/network/response_parser.dart';
@@ -49,6 +51,19 @@ class ProfileService {
     final response = await _client.put(
       ApiEndpoints.userMe,
       data: payload,
+    );
+
+    return UserModel.fromJson(ResponseParser.parseMap(_unwrap(response)));
+  }
+
+  Future<UserModel> uploadAvatar(String filePath) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath),
+    });
+
+    final response = await _client.post(
+      '${ApiEndpoints.userMe}/avatar',
+      data: formData,
     );
 
     return UserModel.fromJson(ResponseParser.parseMap(_unwrap(response)));

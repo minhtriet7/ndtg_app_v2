@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/widgets/app_card.dart';
 import '../models/agent_result_model.dart';
 
@@ -37,7 +38,7 @@ class AgentStatusCard extends StatelessWidget {
       return agent!.agentName;
     }
 
-    return 'AI Agent';
+    return '';
   }
 
   String get _status {
@@ -61,7 +62,7 @@ class AgentStatusCard extends StatelessWidget {
       return agent!.summary;
     }
 
-    return 'Waiting for analysis result.';
+    return '';
   }
 
   String _normalizeStatus(String value) {
@@ -99,7 +100,11 @@ class AgentStatusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final normalized = _status.toLowerCase();
-    final agentName = _name.toLowerCase();
+    final resolvedName = _name.isEmpty ? context.tr('analysisStage') : _name;
+    final resolvedDescription = _description.isEmpty
+        ? context.tr('waitingForAnalysis')
+        : _description;
+    final agentName = resolvedName.toLowerCase();
 
     final Color color = switch (normalized) {
       'completed' => AppColors.success,
@@ -108,19 +113,22 @@ class AgentStatusCard extends StatelessWidget {
       'waiting' => AppColors.warning,
       'failed' => AppColors.danger,
       _ when agentName.contains('llm') => AppColors.agentPurple,
-      _ when agentName.contains('visual') || agentName.contains('lens') => AppColors.secondaryBlue,
+      _ when agentName.contains('visual') || agentName.contains('lens') =>
+        AppColors.secondaryBlue,
       _ => AppColors.primaryTeal,
     };
 
-    final IconData displayIcon = icon ??
+    final IconData displayIcon =
+        icon ??
         switch (normalized) {
           'completed' => Icons.check_circle_rounded,
           'running' => Icons.sync_rounded,
           'failed' => Icons.error_outline_rounded,
           'pending' => Icons.pending_actions_rounded,
           'waiting' => Icons.schedule_rounded,
-          _ when agentName.contains('llm') => Icons.psychology_alt_rounded,
-          _ when agentName.contains('visual') || agentName.contains('lens') => Icons.travel_explore_rounded,
+          _ when agentName.contains('llm') => Icons.fact_check_outlined,
+          _ when agentName.contains('visual') || agentName.contains('lens') =>
+            Icons.travel_explore_rounded,
           _ => Icons.memory_rounded,
         };
 
@@ -161,7 +169,7 @@ class AgentStatusCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          _name,
+                          resolvedName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -174,14 +182,14 @@ class AgentStatusCard extends StatelessWidget {
                         ),
                       ),
                       _StatusPill(
-                        label: normalized,
+                        label: context.trStatus(normalized),
                         color: color,
                       ),
                     ],
                   ),
                   const SizedBox(height: 7),
                   Text(
-                    _description,
+                    resolvedDescription,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -217,18 +225,12 @@ class _StatusPill extends StatelessWidget {
   final String label;
   final Color color;
 
-  const _StatusPill({
-    required this.label,
-    required this.color,
-  });
+  const _StatusPill({required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 5,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: color.withOpacity(0.10),
         borderRadius: BorderRadius.circular(999),

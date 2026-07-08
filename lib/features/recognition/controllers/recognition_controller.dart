@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/storage_keys.dart';
@@ -27,10 +28,7 @@ class AgentPipelineStatus {
     required this.description,
   });
 
-  AgentPipelineStatus copyWith({
-    String? status,
-    String? description,
-  }) {
+  AgentPipelineStatus copyWith({String? status, String? description}) {
     return AgentPipelineStatus(
       key: key,
       name: name,
@@ -42,6 +40,10 @@ class AgentPipelineStatus {
 }
 
 class RecognitionController extends ChangeNotifier {
+  RecognitionController() {
+    unawaited(_restorePersistedState());
+  }
+
   final RecognitionService _service = RecognitionService();
 
   File? _selectedImage;
@@ -50,6 +52,9 @@ class RecognitionController extends ChangeNotifier {
   String _processingMessage = 'Preparing your banknote image...';
   BanknoteResultModel? _finalResult;
   Timer? _pollingTimer;
+  String? _pollingTaskId;
+  bool _pollRequestInFlight = false;
+  bool _disposed = false;
   double _progress = 0.0;
 
   List<AgentPipelineStatus> _agentStatuses = _initialAgentStatuses();
@@ -60,34 +65,37 @@ class RecognitionController extends ChangeNotifier {
   String get processingMessage => _processingMessage;
   BanknoteResultModel? get finalResult => _finalResult;
   double get progress => _progress;
-  List<AgentPipelineStatus> get agentStatuses => List.unmodifiable(_agentStatuses);
+  List<AgentPipelineStatus> get agentStatuses =>
+      List.unmodifiable(_agentStatuses);
 
   static List<AgentPipelineStatus> _initialAgentStatuses() {
     return const [
       AgentPipelineStatus(
         key: 'vision',
-        name: 'ML/DL Vision Agent',
+        name: 'Visual analysis',
         icon: Icons.center_focus_strong_rounded,
         status: 'waiting',
-        description: 'Waiting to detect banknote regions and visual patterns.',
+        description:
+            'Waiting to extract denomination, country, and visual features.',
       ),
       AgentPipelineStatus(
         key: 'llm',
-        name: 'LLM Reasoning Agent',
-        icon: Icons.psychology_alt_rounded,
+        name: 'Evidence analysis',
+        icon: Icons.fact_check_outlined,
         status: 'waiting',
-        description: 'Waiting to reason over text, denomination, and country clues.',
+        description:
+            'Waiting to reason over text, denomination, and country clues.',
       ),
       AgentPipelineStatus(
         key: 'lens',
-        name: 'Visual Search Agent',
+        name: 'Reference verification',
         icon: Icons.travel_explore_rounded,
         status: 'waiting',
         description: 'Waiting to compare visual references when available.',
       ),
       AgentPipelineStatus(
         key: 'aggregator',
-        name: 'Aggregator Decision',
+        name: 'Consensus review',
         icon: Icons.hub_rounded,
         status: 'waiting',
         description: 'Waiting to combine agent outputs into a final decision.',
@@ -152,7 +160,17 @@ class RecognitionController extends ChangeNotifier {
   }
 
   Future<void> startAnalysis() async {
-    if (_selectedImage == null || _isLoading) return;
+    if (_isLoading) return;
+
+    final persistedTaskId = LocalStorage.instance.getString(
+      StorageKeys.activeRecognitionTaskId,
+    );
+    if (persistedTaskId != null && persistedTaskId.trim().isNotEmpty) {
+      await resumeActiveTask();
+      return;
+    }
+
+    if (_selectedImage == null) return;
 
     _cancelTimer();
     _isLoading = true;
@@ -167,124 +185,207 @@ class RecognitionController extends ChangeNotifier {
       await Future<void>.delayed(const Duration(milliseconds: 250));
 
       _progress = 0.18;
-      _processingMessage = 'Vision agent is preparing banknote detection...';
+      _processingMessage = 'Preparing visual analysis...';
       _setPipelineStage('vision_running');
       notifyListeners();
 
-      final dynamic response = await _service.startRecognition(_selectedImage!);
+      final response = await _service.startRecognition(_selectedImage!);
 
-      if (response is BanknoteResultModel) {
-        _finalResult = response;
+      if (response.result != null) {
+        _finalResult = response.result;
+        await _clearActiveTask();
         _completePipeline();
         return;
       }
 
-      final taskId = _extractTaskId(response);
+      final taskId = response.task?.taskId;
       if (taskId != null && taskId.isNotEmpty) {
-        await LocalStorage.instance.setString(
-          StorageKeys.activeRecognitionTaskId,
-          taskId,
-        );
+        await _saveActiveTask(taskId);
         _pollTaskStatus(taskId);
         return;
       }
 
-      final maybeResult = _extractResult(response);
-      if (maybeResult != null) {
-        _finalResult = maybeResult;
-        _completePipeline();
-        return;
-      }
-
-      throw ApiException(
-        message: 'The server returned an unsupported recognition response.',
-      );
+      throw ApiException(message: 'recognitionUnsupportedResponse');
     } catch (e) {
-      _failPipeline(
-        e is ApiException ? e.message : 'Failed to analyze the banknote image.',
-      );
+      _failPipeline(e is ApiException ? e.message : 'recognitionAnalyzeFailed');
     }
   }
 
+  Future<bool> resumeActiveTask() async {
+    final taskId = LocalStorage.instance.getString(
+      StorageKeys.activeRecognitionTaskId,
+    );
+    if (taskId == null || taskId.trim().isEmpty) return false;
+
+    if (_pollingTaskId == taskId && _pollingTimer != null) return true;
+
+    _isLoading = true;
+    _error = null;
+    _finalResult = null;
+    _progress = _progress < 0.18 ? 0.18 : _progress;
+    _processingMessage = 'Restoring the active recognition task...';
+    _setPipelineStage('vision_running');
+    if (!_disposed) notifyListeners();
+    _pollTaskStatus(taskId);
+    return true;
+  }
+
+  Future<void> restoreLastResult() async {
+    if (_finalResult != null || _isLoading) return;
+
+    final resultId = LocalStorage.instance.getString(
+      StorageKeys.lastRecognitionResultId,
+    );
+    if (resultId == null || resultId.trim().isEmpty) return;
+
+    _isLoading = true;
+    if (!_disposed) notifyListeners();
+    try {
+      _finalResult = await _service.getResultDetail(resultId);
+    } catch (_) {
+      // History remains the source of truth if a saved result was removed.
+    } finally {
+      _isLoading = false;
+      if (!_disposed) notifyListeners();
+    }
+  }
+
+  Future<void> _restorePersistedState() async {
+    await resumeActiveTask();
+  }
+
   void _pollTaskStatus(String taskId) {
-    int attempts = 0;
-    const maxAttempts = 45;
+    final startedAt = LocalStorage.instance.getInt(
+      StorageKeys.activeRecognitionTaskStartedAt,
+    );
+    final elapsedSeconds = startedAt == null
+        ? 0
+        : DateTime.now()
+              .difference(DateTime.fromMillisecondsSinceEpoch(startedAt))
+              .inSeconds;
+    int attempts = (elapsedSeconds ~/ 2).clamp(0, 119).toInt();
+    const maxAttempts = 120;
 
     _cancelTimer();
+    _pollingTaskId = taskId;
 
-    _pollingTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+    Future<void> pollOnce() async {
+      if (_pollRequestInFlight || _disposed || _pollingTaskId != taskId) {
+        return;
+      }
+
+      _pollRequestInFlight = true;
       attempts++;
 
       if (attempts > maxAttempts) {
         _cancelTimer();
-        await LocalStorage.instance.remove(StorageKeys.activeRecognitionTaskId);
-        _failPipeline('AI processing timed out. Please try again.');
+        await _clearActiveTask();
+        _failPipeline('recognitionProcessingTimeout');
+        _pollRequestInFlight = false;
         return;
       }
 
       try {
         final task = await _service.getTaskStatus(taskId);
-        final normalizedStatus = task.status.toLowerCase();
 
         _processingMessage = task.message.isNotEmpty
             ? task.message
             : _messageForAttempt(attempts);
 
-        _progress = ((attempts / maxAttempts) * 0.82)
-            .clamp(0.20, 0.92)
-            .toDouble();
+        _progress = task.progress > 0
+            ? (task.progress / 100).clamp(0.20, 0.96).toDouble()
+            : ((attempts / maxAttempts) * 0.82).clamp(0.20, 0.92).toDouble();
 
-        _setPipelineFromAttempt(attempts, maxAttempts);
+        _setPipelineFromTask(task.stage, attempts, maxAttempts);
 
-        if (normalizedStatus == 'completed' ||
-            normalizedStatus == 'success' ||
-            normalizedStatus == 'done') {
+        if (task.isFailed) {
           _cancelTimer();
-
-          _progress = 0.96;
-          _processingMessage = 'Aggregator completed. Fetching final result...';
-          _setPipelineStage('aggregator_running');
-          notifyListeners();
-
-          if (task.resultId != null && task.resultId!.isNotEmpty) {
-            _finalResult = await _service.getResultDetail(task.resultId!);
-          } else {
-            final dynamic taskDynamic = task;
-            final extracted = _extractResult(taskDynamic);
-            if (extracted != null) {
-              _finalResult = extracted;
-            }
-          }
-
-          if (_finalResult == null) {
-            throw ApiException(
-              message: 'Task completed but no result was returned.',
-            );
-          }
-
-          await LocalStorage.instance.remove(StorageKeys.activeRecognitionTaskId);
-          _completePipeline();
-          return;
-        }
-
-        if (normalizedStatus == 'failed' || normalizedStatus == 'error') {
-          _cancelTimer();
-          await LocalStorage.instance.remove(StorageKeys.activeRecognitionTaskId);
+          await _clearActiveTask();
           _failPipeline(
-            task.message.isNotEmpty ? task.message : 'AI analysis failed.',
+            task.errorMessage ??
+                (task.message.isNotEmpty
+                    ? task.message
+                    : 'recognitionAnalyzeFailed'),
           );
           return;
         }
 
-        notifyListeners();
-      } catch (_) {
-        if (attempts > 3) {
-          _processingMessage = 'Still processing. Waiting for AI agents...';
-          _setPipelineFromAttempt(attempts, maxAttempts);
-          notifyListeners();
+        if (task.isDone || task.hasTerminalResult) {
+          _progress = 0.96;
+          _processingMessage = 'Aggregator completed. Fetching final result...';
+          _setPipelineStage('aggregator_running');
+          if (!_disposed) notifyListeners();
+
+          if (task.result != null) {
+            _finalResult = task.result;
+          } else if (task.resultId != null && task.resultId!.isNotEmpty) {
+            _finalResult = await _service.getResultDetail(task.resultId!);
+          }
+
+          if (_finalResult == null) {
+            _cancelTimer();
+            await _clearActiveTask();
+            _failPipeline(task.errorMessage ?? 'recognitionResultMissing');
+            return;
+          }
+
+          _cancelTimer();
+          await _clearActiveTask();
+          _completePipeline();
+          _pollRequestInFlight = false;
+          return;
         }
+
+        if (!_disposed) notifyListeners();
+      } catch (error) {
+        final apiError = error is ApiException
+            ? error
+            : error is DioException && error.error is ApiException
+            ? error.error as ApiException
+            : null;
+
+        if (apiError != null &&
+            const {401, 403, 404}.contains(apiError.statusCode)) {
+          _cancelTimer();
+          await _clearActiveTask();
+          _failPipeline(apiError.message);
+          return;
+        }
+
+        if (attempts > 3) {
+          _processingMessage = 'Processing is still in progress...';
+          _setPipelineFromAttempt(attempts, maxAttempts);
+          if (!_disposed) notifyListeners();
+        }
+      } finally {
+        _pollRequestInFlight = false;
       }
-    });
+    }
+
+    unawaited(pollOnce());
+    _pollingTimer = Timer.periodic(
+      const Duration(seconds: 2),
+      (_) => unawaited(pollOnce()),
+    );
+  }
+
+  void _setPipelineFromTask(String stage, int attempts, int maxAttempts) {
+    final normalized = stage.toLowerCase();
+    if (normalized.contains('aggregate') ||
+        normalized.contains('consensus') ||
+        normalized.contains('saving')) {
+      _setPipelineStage('aggregator_running');
+    } else if (normalized.contains('lens') || normalized.contains('search')) {
+      _setPipelineStage('lens_running');
+    } else if (normalized.contains('llm') || normalized.contains('agent')) {
+      _setPipelineStage('llm_running');
+    } else if (normalized.contains('crop') ||
+        normalized.contains('image') ||
+        normalized.contains('vision')) {
+      _setPipelineStage('vision_running');
+    } else {
+      _setPipelineFromAttempt(attempts, maxAttempts);
+    }
   }
 
   void _setPipelineFromAttempt(int attempts, int maxAttempts) {
@@ -305,7 +406,11 @@ class RecognitionController extends ChangeNotifier {
     switch (stage) {
       case 'uploading':
         _agentStatuses = [
-          _agent('vision', 'pending', 'Image uploaded. Waiting for visual detection.'),
+          _agent(
+            'vision',
+            'pending',
+            'Image uploaded. Waiting for visual analysis.',
+          ),
           _agent('llm', 'waiting', 'Waiting for visual evidence.'),
           _agent('lens', 'waiting', 'Waiting for reference search.'),
           _agent('aggregator', 'waiting', 'Waiting for agent outputs.'),
@@ -314,8 +419,16 @@ class RecognitionController extends ChangeNotifier {
 
       case 'vision_running':
         _agentStatuses = [
-          _agent('vision', 'running', 'Detecting banknote object, layout, and visual features.'),
-          _agent('llm', 'pending', 'Queued for reasoning after visual extraction.'),
+          _agent(
+            'vision',
+            'running',
+            'Analyzing banknote denomination and country.',
+          ),
+          _agent(
+            'llm',
+            'pending',
+            'Queued for reasoning after visual extraction.',
+          ),
           _agent('lens', 'waiting', 'Waiting for image reference search.'),
           _agent('aggregator', 'waiting', 'Waiting for agent votes.'),
         ];
@@ -323,8 +436,12 @@ class RecognitionController extends ChangeNotifier {
 
       case 'llm_running':
         _agentStatuses = [
-          _agent('vision', 'completed', 'Visual features extracted successfully.'),
-          _agent('llm', 'running', 'Reasoning over denomination, text, and country clues.'),
+          _agent('vision', 'completed', 'Visual analysis completed.'),
+          _agent(
+            'llm',
+            'running',
+            'Reasoning over denomination, text, and country clues.',
+          ),
           _agent('lens', 'pending', 'Queued for visual reference lookup.'),
           _agent('aggregator', 'waiting', 'Waiting for agent votes.'),
         ];
@@ -332,26 +449,38 @@ class RecognitionController extends ChangeNotifier {
 
       case 'lens_running':
         _agentStatuses = [
-          _agent('vision', 'completed', 'Visual features extracted successfully.'),
+          _agent('vision', 'completed', 'Visual analysis completed.'),
           _agent('llm', 'completed', 'Reasoning output received.'),
-          _agent('lens', 'running', 'Comparing image against visual references.'),
+          _agent(
+            'lens',
+            'running',
+            'Comparing image against visual references.',
+          ),
           _agent('aggregator', 'pending', 'Preparing final consensus.'),
         ];
         break;
 
       case 'aggregator_running':
         _agentStatuses = [
-          _agent('vision', 'completed', 'Visual features extracted successfully.'),
+          _agent(
+            'vision',
+            'completed',
+            'Visual features extracted successfully.',
+          ),
           _agent('llm', 'completed', 'Reasoning output received.'),
           _agent('lens', 'completed', 'Visual reference check completed.'),
-          _agent('aggregator', 'running', 'Combining agent votes into the final decision.'),
+          _agent(
+            'aggregator',
+            'running',
+            'Combining agent votes into the final decision.',
+          ),
         ];
         break;
 
       case 'completed':
         _agentStatuses = [
           _agent('vision', 'completed', 'Visual analysis completed.'),
-          _agent('llm', 'completed', 'LLM reasoning completed.'),
+          _agent('llm', 'completed', 'Evidence analysis completed.'),
           _agent('lens', 'completed', 'Visual search completed.'),
           _agent('aggregator', 'completed', 'Consensus decision completed.'),
         ];
@@ -372,11 +501,7 @@ class RecognitionController extends ChangeNotifier {
     }
   }
 
-  AgentPipelineStatus _agent(
-      String key,
-      String status,
-      String description,
-      ) {
+  AgentPipelineStatus _agent(String key, String status, String description) {
     final base = _initialAgentStatuses().firstWhere((item) => item.key == key);
     return base.copyWith(status: status, description: description);
   }
@@ -387,7 +512,16 @@ class RecognitionController extends ChangeNotifier {
     _isLoading = false;
     _error = null;
     _setPipelineStage('completed');
-    notifyListeners();
+    final resultId = _finalResult?.id;
+    if (resultId != null && resultId.isNotEmpty) {
+      unawaited(
+        LocalStorage.instance.setString(
+          StorageKeys.lastRecognitionResultId,
+          resultId,
+        ),
+      );
+    }
+    if (!_disposed) notifyListeners();
   }
 
   void _failPipeline(String message) {
@@ -395,16 +529,16 @@ class RecognitionController extends ChangeNotifier {
     _error = message;
     _processingMessage = 'Analysis could not be completed.';
     _setPipelineStage('failed');
-    notifyListeners();
+    if (!_disposed) notifyListeners();
   }
 
   String _messageForAttempt(int attempts) {
     if (attempts <= 4) {
-      return 'Vision agent is extracting visual features...';
+      return 'Extracting visual banknote details...';
     }
 
     if (attempts <= 10) {
-      return 'LLM agent is reasoning over denomination and country clues...';
+      return 'Reviewing denomination and country evidence...';
     }
 
     if (attempts <= 18) {
@@ -414,37 +548,22 @@ class RecognitionController extends ChangeNotifier {
     return 'Aggregator is evaluating consensus across agents...';
   }
 
-  String? _extractTaskId(dynamic response) {
-    try {
-      final dynamic value = response.taskId;
-      if (value != null) return value.toString();
-    } catch (_) {}
-
-    try {
-      final dynamic value = response.id;
-      if (value != null) return value.toString();
-    } catch (_) {}
-
-    return null;
+  Future<void> _saveActiveTask(String taskId) async {
+    await LocalStorage.instance.setString(
+      StorageKeys.activeRecognitionTaskId,
+      taskId,
+    );
+    await LocalStorage.instance.setInt(
+      StorageKeys.activeRecognitionTaskStartedAt,
+      DateTime.now().millisecondsSinceEpoch,
+    );
   }
 
-  BanknoteResultModel? _extractResult(dynamic response) {
-    if (response is BanknoteResultModel) return response;
-
-    try {
-      final dynamic result = response.result;
-      if (result is BanknoteResultModel) return result;
-      if (result is Map<String, dynamic>) {
-        return BanknoteResultModel.fromJson(result);
-      }
-    } catch (_) {}
-
-    try {
-      final dynamic data = response.data;
-      if (data is Map<String, dynamic>) return BanknoteResultModel.fromJson(data);
-    } catch (_) {}
-
-    return null;
+  Future<void> _clearActiveTask() async {
+    await LocalStorage.instance.remove(StorageKeys.activeRecognitionTaskId);
+    await LocalStorage.instance.remove(
+      StorageKeys.activeRecognitionTaskStartedAt,
+    );
   }
 
   List<AgentResultModel> get safeAgentResults {
@@ -456,10 +575,12 @@ class RecognitionController extends ChangeNotifier {
   void _cancelTimer() {
     _pollingTimer?.cancel();
     _pollingTimer = null;
+    _pollingTaskId = null;
   }
 
   @override
   void dispose() {
+    _disposed = true;
     _cancelTimer();
     super.dispose();
   }

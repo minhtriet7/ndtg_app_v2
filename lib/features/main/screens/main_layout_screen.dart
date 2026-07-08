@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../banknote_directory/screens/supported_banknotes_screen.dart';
 import '../../history/screens/history_screen.dart';
 import '../../home/screens/home_screen.dart';
@@ -39,10 +40,7 @@ class _MainLayoutView extends StatelessWidget {
 
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(
-        index: tabController.currentIndex,
-        children: screens,
-      ),
+      body: IndexedStack(index: tabController.currentIndex, children: screens),
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(14, 0, 14, 12),
         child: Container(
@@ -70,37 +68,39 @@ class _MainLayoutView extends StatelessWidget {
               currentIndex: tabController.currentIndex,
               onTap: tabController.setIndex,
               backgroundColor: Colors.transparent,
-              selectedItemColor:
-              isDark ? AppColors.primaryLightTeal : AppColors.primaryTeal,
-              unselectedItemColor:
-              isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+              selectedItemColor: isDark
+                  ? AppColors.primaryLightTeal
+                  : AppColors.primaryTeal,
+              unselectedItemColor: isDark
+                  ? AppColors.textMutedDark
+                  : AppColors.textMutedLight,
               type: BottomNavigationBarType.fixed,
               elevation: 0,
-              items: const [
+              items: [
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.space_dashboard_outlined),
-                  activeIcon: Icon(Icons.space_dashboard_rounded),
-                  label: 'Home',
+                  icon: const Icon(Icons.space_dashboard_outlined),
+                  activeIcon: const Icon(Icons.space_dashboard_rounded),
+                  label: context.tr('home'),
                 ),
                 BottomNavigationBarItem(
-                  icon: _ScanNavIcon(active: false),
-                  activeIcon: _ScanNavIcon(active: true),
-                  label: 'Scan',
+                  icon: const _ScanNavIcon(active: false),
+                  activeIcon: const _ScanNavIcon(active: true),
+                  label: context.tr('scan'),
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.public_outlined),
-                  activeIcon: Icon(Icons.public_rounded),
-                  label: 'Directory',
+                  icon: const Icon(Icons.public_outlined),
+                  activeIcon: const Icon(Icons.public_rounded),
+                  label: context.tr('navigationDirectory'),
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.history_rounded),
-                  activeIcon: Icon(Icons.history_rounded),
-                  label: 'History',
+                  icon: const Icon(Icons.history_rounded),
+                  activeIcon: const Icon(Icons.history_rounded),
+                  label: context.tr('history'),
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.person_outline_rounded),
-                  activeIcon: Icon(Icons.person_rounded),
-                  label: 'Profile',
+                  icon: const Icon(Icons.person_outline_rounded),
+                  activeIcon: const Icon(Icons.person_rounded),
+                  label: context.tr('profile'),
                 ),
               ],
             ),

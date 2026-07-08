@@ -34,14 +34,20 @@ class EmptyState extends StatelessWidget {
               width: 76,
               height: 76,
               decoration: BoxDecoration(
-                color: isDark ? AppColors.borderDark.withOpacity(0.50) : const Color(0xFFF1F5F9),
+                color: isDark
+                    ? AppColors.borderDark.withOpacity(0.50)
+                    : AppColors.surfaceSubtleLight,
                 borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                border: Border.all(
+                  color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                ),
               ),
               child: Icon(
                 icon,
                 size: 34,
-                color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+                color: isDark
+                    ? AppColors.textMutedDark
+                    : AppColors.textMutedLight,
               ),
             ),
             const SizedBox(height: 18),
@@ -52,7 +58,9 @@ class EmptyState extends StatelessWidget {
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
                 letterSpacing: -0.3,
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimaryLight,
               ),
             ),
             const SizedBox(height: 8),
@@ -62,7 +70,9 @@ class EmptyState extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 height: 1.5,
-                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
               ),
             ),
             if (actionLabel != null && onAction != null) ...[

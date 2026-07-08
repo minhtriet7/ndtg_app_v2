@@ -34,13 +34,16 @@ class AuthController extends ChangeNotifier {
       if (response.accessToken.isNotEmpty) {
         await SecureStorage.instance.saveToken(response.accessToken);
       }
+      if (response.refreshToken.isNotEmpty) {
+        await SecureStorage.instance.saveRefreshToken(response.refreshToken);
+      }
       _currentUser = response.user;
       _isLoading = false;
       notifyListeners();
       return true;
     } catch (e) {
       _isLoading = false;
-      _error = e is ApiException ? e.message : 'Đăng nhập thất bại. Vui lòng thử lại.';
+      _error = e is ApiException ? e.message : 'loginFailed';
       notifyListeners();
       return false;
     }
@@ -65,6 +68,11 @@ class AuthController extends ChangeNotifier {
       if (loginResponse.accessToken.isNotEmpty) {
         await SecureStorage.instance.saveToken(loginResponse.accessToken);
       }
+      if (loginResponse.refreshToken.isNotEmpty) {
+        await SecureStorage.instance.saveRefreshToken(
+          loginResponse.refreshToken,
+        );
+      }
 
       _currentUser = loginResponse.user;
       _isLoading = false;
@@ -72,7 +80,7 @@ class AuthController extends ChangeNotifier {
       return true;
     } catch (e) {
       _isLoading = false;
-      _error = e is ApiException ? e.message : 'Không thể tạo tài khoản.';
+      _error = e is ApiException ? e.message : 'accountCreateFailed';
       notifyListeners();
       return false;
     }
@@ -85,9 +93,12 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final token = await _authService.authenticateWithGoogle();
+      final response = await _authService.authenticateWithGoogle();
 
-      await SecureStorage.instance.saveToken(token);
+      await SecureStorage.instance.saveToken(response.accessToken);
+      if (response.refreshToken.isNotEmpty) {
+        await SecureStorage.instance.saveRefreshToken(response.refreshToken);
+      }
       _currentUser = await _authService.getMe();
 
       _isLoading = false;
@@ -95,9 +106,7 @@ class AuthController extends ChangeNotifier {
       return true;
     } catch (e) {
       _isLoading = false;
-      _error = e is ApiException
-          ? e.message
-          : 'Google sign-in was cancelled or failed.';
+      _error = e is ApiException ? e.message : 'googleSignInFailed';
       notifyListeners();
       return false;
     }
@@ -124,7 +133,7 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    await SecureStorage.instance.clearToken();
+    await SecureStorage.instance.clearAuthTokens();
     _currentUser = null;
     _error = null;
     notifyListeners();

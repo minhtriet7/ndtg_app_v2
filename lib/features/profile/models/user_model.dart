@@ -29,9 +29,7 @@ class UserModel {
 
   bool get isAdmin {
     final normalized = role.toLowerCase().trim();
-    return normalized == 'admin' ||
-        normalized == 'superadmin' ||
-        normalized == 'owner';
+    return normalized == 'admin';
   }
 
   String get initials {
@@ -58,95 +56,76 @@ class UserModel {
     );
 
     return UserModel(
-      id: ResponseParser.getValue(
-        json,
-        ['id', '_id', 'user_id', 'userId'],
-        defaultValue: '',
-      ).toString(),
-      email: ResponseParser.getValue(
-        json,
-        ['email', 'user.email'],
-        defaultValue: '',
-      ).toString(),
-      fullName: ResponseParser.getValue(
-        json,
-        [
-          'full_name',
-          'fullName',
-          'name',
-          'display_name',
-          'displayName',
-          'username',
-          'user.full_name',
-          'user.name',
-        ],
-        defaultValue: 'BanknoteAI User',
-      ).toString(),
-      phone: ResponseParser.getValue(
-        json,
-        ['phone', 'phone_number', 'phoneNumber'],
-        defaultValue: '',
-      ).toString(),
-      avatarUrl: ResponseParser.getValue(
-        json,
-        [
-          'avatar_url',
-          'avatarUrl',
-          'avatar',
-          'photo_url',
-          'picture',
-          'user.avatar_url',
-          'user.picture',
-        ],
-        defaultValue: '',
-      ).toString(),
-      role: ResponseParser.getValue(
-        json,
-        ['role', 'user.role'],
-        defaultValue: 'user',
-      ).toString(),
-      provider: ResponseParser.getValue(
-        json,
-        ['provider', 'auth_provider', 'login_provider'],
-        defaultValue: 'email',
-      ).toString(),
+      id: ResponseParser.getValue(json, [
+        'id',
+        '_id',
+        'user_id',
+        'userId',
+      ], defaultValue: '').toString(),
+      email: ResponseParser.getValue(json, [
+        'email',
+        'user.email',
+      ], defaultValue: '').toString(),
+      fullName: ResponseParser.getValue(json, [
+        'full_name',
+        'fullName',
+        'name',
+        'display_name',
+        'displayName',
+        'username',
+        'user.full_name',
+        'user.name',
+      ], defaultValue: 'BanknoteAI User').toString(),
+      phone: ResponseParser.getValue(json, [
+        'phone',
+        'phone_number',
+        'phoneNumber',
+      ], defaultValue: '').toString(),
+      avatarUrl: ResponseParser.getValue(json, [
+        'avatar_url',
+        'avatarUrl',
+        'avatar',
+        'photo_url',
+        'picture',
+        'user.avatar_url',
+        'user.picture',
+      ], defaultValue: '').toString(),
+      role: ResponseParser.getValue(json, [
+        'role',
+        'user.role',
+      ], defaultValue: 'user').toString(),
+      provider: ResponseParser.getValue(json, [
+        'provider',
+        'auth_provider',
+        'login_provider',
+      ], defaultValue: 'email').toString(),
       tokenBalance: _asInt(
-        ResponseParser.getValue(
-          json,
-          [
-            'token_balance',
-            'tokens',
-            'balance',
-            'tokenBalance',
-            'user.token_balance',
-          ],
-          defaultValue: 0,
-        ),
+        ResponseParser.getValue(json, [
+          'token_balance',
+          'tokens',
+          'balance',
+          'tokenBalance',
+          'user.token_balance',
+        ], defaultValue: 0),
       ),
       totalScans: _asInt(
-        ResponseParser.getValue(
-          json,
-          [
-            'total_scans',
-            'scan_count',
-            'scans',
-            'totalScans',
-            'recognition_count',
-            'user.total_scans',
-          ],
-          defaultValue: 0,
-        ),
+        ResponseParser.getValue(json, [
+          'total_scans',
+          'scan_count',
+          'scans',
+          'totalScans',
+          'recognition_count',
+          'user.total_scans',
+        ], defaultValue: 0),
       ),
-      createdAt: ResponseParser.getValue(
-        json,
-        ['created_at', 'createdAt'],
-        defaultValue: '',
-      ).toString(),
-      updatedAt: ResponseParser.getValue(
-        json,
-        ['updated_at', 'updatedAt'],
-        defaultValue: '',
-      ).toString(),
+      createdAt: ResponseParser.getValue(json, [
+        'created_at',
+        'createdAt',
+      ], defaultValue: '').toString(),
+      updatedAt: ResponseParser.getValue(json, [
+        'updated_at',
+        'updatedAt',
+      ], defaultValue: '').toString(),
     );
   }
 

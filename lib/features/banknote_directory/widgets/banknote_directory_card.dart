@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/network_image_view.dart';
 import '../models/banknote_directory_model.dart';
@@ -10,11 +11,7 @@ class BanknoteDirectoryCard extends StatelessWidget {
   final BanknoteDirectoryModel banknote;
   final VoidCallback? onTap;
 
-  const BanknoteDirectoryCard({
-    super.key,
-    required this.banknote,
-    this.onTap,
-  });
+  const BanknoteDirectoryCard({super.key, required this.banknote, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +28,7 @@ class BanknoteDirectoryCard extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(AppSizes.md),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.bgDark : const Color(0xFFF8FAFC),
+              color: AppColors.surfaceSubtle(context),
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(AppSizes.radiusXl),
               ),
@@ -41,17 +38,19 @@ class BanknoteDirectoryCard extends StatelessWidget {
                 Center(
                   child: banknote.frontImageUrl.isEmpty
                       ? Icon(
-                    Icons.account_balance_wallet_outlined,
-                    color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
-                    size: 58,
-                  )
+                          Icons.account_balance_wallet_outlined,
+                          color: isDark
+                              ? AppColors.textMutedDark
+                              : AppColors.textMutedLight,
+                          size: 58,
+                        )
                       : NetworkImageView(
-                    imageUrl: banknote.frontImageUrl,
-                    height: 132,
-                    width: double.infinity,
-                    fit: BoxFit.contain,
-                    borderRadius: AppSizes.radiusMd,
-                  ),
+                          imageUrl: banknote.frontImageUrl,
+                          height: 132,
+                          width: double.infinity,
+                          fit: BoxFit.contain,
+                          borderRadius: AppSizes.radiusMd,
+                        ),
                 ),
                 Positioned(
                   left: 0,
@@ -59,10 +58,10 @@ class BanknoteDirectoryCard extends StatelessWidget {
                   child: _ImageBadge(text: banknote.currencyCode),
                 ),
                 if (banknote.backImageUrl.isNotEmpty)
-                  const Positioned(
+                  Positioned(
                     right: 0,
                     top: 0,
-                    child: _ImageBadge(text: 'Front + Back'),
+                    child: _ImageBadge(text: context.tr('frontAndBack')),
                   ),
               ],
             ),
@@ -77,7 +76,9 @@ class BanknoteDirectoryCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.3,
@@ -89,7 +90,9 @@ class BanknoteDirectoryCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+                    color: isDark
+                        ? AppColors.textMutedDark
+                        : AppColors.textMutedLight,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
@@ -99,14 +102,14 @@ class BanknoteDirectoryCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _MetaPill(
-                        label: 'Material',
+                        label: context.tr('material'),
                         value: banknote.material,
                       ),
                     ),
                     const SizedBox(width: AppSizes.sm),
                     Expanded(
                       child: _MetaPill(
-                        label: 'Series',
+                        label: context.tr('series'),
                         value: banknote.seriesYear,
                       ),
                     ),
@@ -119,7 +122,9 @@ class BanknoteDirectoryCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondaryLight,
                       fontSize: 12,
                       height: 1.35,
                       fontWeight: FontWeight.w600,
@@ -129,17 +134,17 @@ class BanknoteDirectoryCard extends StatelessWidget {
                 if (onTap != null) ...[
                   const SizedBox(height: AppSizes.md),
                   Row(
-                    children: const [
+                    children: [
                       Text(
-                        'View details',
-                        style: TextStyle(
+                        context.tr('viewDetails'),
+                        style: const TextStyle(
                           color: AppColors.primaryTeal,
                           fontWeight: FontWeight.w900,
                           fontSize: 12,
                         ),
                       ),
-                      SizedBox(width: 4),
-                      Icon(
+                      const SizedBox(width: 4),
+                      const Icon(
                         Icons.arrow_forward_rounded,
                         color: AppColors.primaryTeal,
                         size: 15,
@@ -168,7 +173,9 @@ class _ImageBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.cardDark.withOpacity(0.92) : Colors.white.withOpacity(0.92),
+        color: isDark
+            ? AppColors.cardDark.withOpacity(0.92)
+            : Colors.white.withOpacity(0.92),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
           color: isDark ? AppColors.borderDark : AppColors.borderLight,
@@ -190,10 +197,7 @@ class _MetaPill extends StatelessWidget {
   final String label;
   final String value;
 
-  const _MetaPill({
-    required this.label,
-    required this.value,
-  });
+  const _MetaPill({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -202,7 +206,7 @@ class _MetaPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSizes.sm),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.bgDark : const Color(0xFFF8FAFC),
+        color: AppColors.surfaceSubtle(context),
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
         border: Border.all(
           color: isDark ? AppColors.borderDark : AppColors.borderLight,
@@ -216,7 +220,9 @@ class _MetaPill extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+              color: isDark
+                  ? AppColors.textMutedDark
+                  : AppColors.textMutedLight,
               fontSize: 9,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.6,
@@ -224,11 +230,13 @@ class _MetaPill extends StatelessWidget {
           ),
           const SizedBox(height: 3),
           Text(
-            value.isEmpty ? 'Unknown' : value,
+            value.isEmpty ? context.tr('unknown') : value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+              color: isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight,
               fontSize: 12,
               fontWeight: FontWeight.w900,
             ),

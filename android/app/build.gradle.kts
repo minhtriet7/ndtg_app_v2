@@ -28,6 +28,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // Callback scheme placeholder for Google OAuth redirects via flutter_web_auth_2
+        manifestPlaceholders += mapOf("flutterWebAuth2CallbackScheme" to "banknoteai")
     }
 
     buildTypes {

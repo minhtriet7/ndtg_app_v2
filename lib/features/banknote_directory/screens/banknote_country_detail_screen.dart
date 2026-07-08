@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/network_image_view.dart';
 import '../../currency/data/currency_service.dart';
@@ -14,19 +15,14 @@ import '../widgets/banknote_directory_card.dart';
 class BanknoteCountryDetailScreen extends StatelessWidget {
   final SupportedCountryModel country;
 
-  const BanknoteCountryDetailScreen({
-    super.key,
-    required this.country,
-  });
+  const BanknoteCountryDetailScreen({super.key, required this.country});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(country.country),
-      ),
+      appBar: AppBar(title: Text(country.country)),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           AppSizes.lg,
@@ -42,7 +38,9 @@ class BanknoteCountryDetailScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppSizes.radiusXxl),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primaryTeal.withOpacity(isDark ? 0.12 : 0.22),
+                  color: AppColors.primaryTeal.withOpacity(
+                    isDark ? 0.12 : 0.22,
+                  ),
                   blurRadius: 28,
                   offset: const Offset(0, 14),
                 ),
@@ -64,7 +62,10 @@ class BanknoteCountryDetailScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '${country.noteCount} supported banknotes · ${country.currencyCode}',
+                  context.trArgs('supportedBanknoteCount', {
+                    'count': country.noteCount,
+                    'currency': country.currencyCode,
+                  }),
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 14,
@@ -77,8 +78,12 @@ class BanknoteCountryDetailScreen extends StatelessWidget {
                   runSpacing: 8,
                   children: [
                     _HeroPill(text: country.currencyCode),
-                    _HeroPill(text: '${country.noteCount} notes'),
-                    _HeroPill(text: 'AI reference ready'),
+                    _HeroPill(
+                      text: context.trArgs('noteCount', {
+                        'count': country.noteCount,
+                      }),
+                    ),
+                    _HeroPill(text: context.tr('aiReferenceReady')),
                   ],
                 ),
               ],
@@ -86,7 +91,7 @@ class BanknoteCountryDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.xl),
           Text(
-            'Supported Banknotes',
+            context.tr('supportedBanknotes'),
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w900,
               letterSpacing: -0.4,
@@ -94,12 +99,12 @@ class BanknoteCountryDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Tap a banknote to view reference images, features, and estimated VND value.',
+            context.tr('supportedBanknotesDetailDesc'),
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: AppSizes.md),
           ...country.banknotes.map(
-                (item) => Padding(
+            (item) => Padding(
               padding: const EdgeInsets.only(bottom: AppSizes.md),
               child: BanknoteDirectoryCard(
                 banknote: item,
@@ -116,7 +121,7 @@ class BanknoteCountryDetailScreen extends StatelessWidget {
                 context.read<MainTabController>().goScan();
               },
               icon: const Icon(Icons.document_scanner_rounded),
-              label: const Text('Scan Similar Banknote'),
+              label: Text(context.tr('scanSimilarBanknote')),
             ),
           ),
         ],
@@ -124,7 +129,10 @@ class BanknoteCountryDetailScreen extends StatelessWidget {
     );
   }
 
-  void _showBanknoteDetail(BuildContext context, BanknoteDirectoryModel banknote) {
+  void _showBanknoteDetail(
+    BuildContext context,
+    BanknoteDirectoryModel banknote,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -138,9 +146,7 @@ class BanknoteCountryDetailScreen extends StatelessWidget {
 class _BanknoteDetailSheet extends StatelessWidget {
   final BanknoteDirectoryModel banknote;
 
-  const _BanknoteDetailSheet({
-    required this.banknote,
-  });
+  const _BanknoteDetailSheet({required this.banknote});
 
   @override
   Widget build(BuildContext context) {
@@ -153,10 +159,8 @@ class _BanknoteDetailSheet extends StatelessWidget {
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: isDark ? AppColors.bgDark : const Color(0xFFF8FBFF),
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(30),
-            ),
+            color: isDark ? AppColors.bgDark : AppColors.bgLight,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
           ),
           child: ListView(
             controller: scrollController,
@@ -172,7 +176,9 @@ class _BanknoteDetailSheet extends StatelessWidget {
                   width: 42,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                    color: isDark
+                        ? AppColors.borderDark
+                        : AppColors.borderLight,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -184,7 +190,9 @@ class _BanknoteDetailSheet extends StatelessWidget {
                     child: Text(
                       banknote.displayName,
                       style: TextStyle(
-                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimaryLight,
                         fontSize: 25,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -0.7,
@@ -201,7 +209,9 @@ class _BanknoteDetailSheet extends StatelessWidget {
               Text(
                 '${banknote.country} · ${banknote.currencyCode}',
                 style: TextStyle(
-                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -220,9 +230,9 @@ class _BanknoteDetailSheet extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Description',
-                        style: TextStyle(
+                      Text(
+                        context.tr('description'),
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
                         ),
@@ -245,16 +255,16 @@ class _BanknoteDetailSheet extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Security / Recognition Features',
-                        style: TextStyle(
+                      Text(
+                        context.tr('securityRecognitionFeatures'),
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
                       const SizedBox(height: AppSizes.md),
                       ...banknote.features.map(
-                            (feature) => Padding(
+                        (feature) => Padding(
                           padding: const EdgeInsets.only(bottom: AppSizes.sm),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,7 +274,9 @@ class _BanknoteDetailSheet extends StatelessWidget {
                                 height: 22,
                                 margin: const EdgeInsets.only(top: 1),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primaryTeal.withOpacity(0.12),
+                                  color: AppColors.primaryTeal.withOpacity(
+                                    0.12,
+                                  ),
                                   borderRadius: BorderRadius.circular(999),
                                 ),
                                 child: const Icon(
@@ -310,14 +322,15 @@ class _BanknoteImages extends StatelessWidget {
       children: [
         if (banknote.frontImageUrl.isNotEmpty)
           _ImagePanel(
-            label: 'Front side',
+            label: context.tr('frontSide'),
             imageUrl: banknote.frontImageUrl,
           ),
-        if (banknote.frontImageUrl.isNotEmpty && banknote.backImageUrl.isNotEmpty)
+        if (banknote.frontImageUrl.isNotEmpty &&
+            banknote.backImageUrl.isNotEmpty)
           const SizedBox(height: AppSizes.md),
         if (banknote.backImageUrl.isNotEmpty)
           _ImagePanel(
-            label: 'Back side',
+            label: context.tr('backSide'),
             imageUrl: banknote.backImageUrl,
           ),
       ],
@@ -329,10 +342,7 @@ class _ImagePanel extends StatelessWidget {
   final String label;
   final String imageUrl;
 
-  const _ImagePanel({
-    required this.label,
-    required this.imageUrl,
-  });
+  const _ImagePanel({required this.label, required this.imageUrl});
 
   @override
   Widget build(BuildContext context) {
@@ -345,9 +355,7 @@ class _ImagePanel extends StatelessWidget {
             padding: const EdgeInsets.all(AppSizes.md),
             child: Text(
               label,
-              style: const TextStyle(
-                fontWeight: FontWeight.w900,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w900),
             ),
           ),
           NetworkImageView(
@@ -378,11 +386,9 @@ class _NoImagePanel extends StatelessWidget {
                 : AppColors.textMutedLight,
           ),
           const SizedBox(height: AppSizes.sm),
-          const Text(
-            'Reference image not available',
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-            ),
+          Text(
+            context.tr('referenceImageUnavailable'),
+            style: const TextStyle(fontWeight: FontWeight.w800),
           ),
         ],
       ),
@@ -416,10 +422,13 @@ class _VndEstimateCardState extends State<_VndEstimateCard> {
     final amount = widget.banknote.numericDenomination;
     final currency = widget.banknote.currencyCode.toUpperCase();
 
-    if (amount <= 0 || currency.isEmpty || currency == 'N/A' || currency == 'UNKNOWN') {
+    if (amount <= 0 ||
+        currency.isEmpty ||
+        currency == 'N/A' ||
+        currency == 'UNKNOWN') {
       setState(() {
         _loading = false;
-        _error = 'Exchange estimate unavailable.';
+        _error = 'exchangeEstimateUnavailable';
       });
       return;
     }
@@ -442,7 +451,7 @@ class _VndEstimateCardState extends State<_VndEstimateCard> {
     setState(() {
       _loading = false;
       _converted = converted;
-      _error = converted == null ? 'Exchange rate unavailable.' : null;
+      _error = converted == null ? 'exchangeUnavailable' : null;
     });
   }
 
@@ -471,22 +480,22 @@ class _VndEstimateCardState extends State<_VndEstimateCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Estimated VND Value',
-                  style: TextStyle(
+                Text(
+                  context.tr('estimatedVndValue'),
+                  style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 5),
                 if (_loading)
-                  const Text(
-                    'Checking exchange rate...',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                  Text(
+                    context.tr('checkingRate'),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   )
                 else if (_error != null)
                   Text(
-                    _error!,
+                    context.tr(_error!),
                     style: const TextStyle(
                       color: AppColors.warning,
                       fontWeight: FontWeight.w800,
@@ -523,31 +532,48 @@ class _BanknoteMetadata extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Banknote Metadata',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-            ),
+          Text(
+            context.tr('banknoteMetadata'),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: AppSizes.md),
           Row(
             children: [
-              Expanded(child: _MetaBox(label: 'Country', value: banknote.country)),
+              Expanded(
+                child: _MetaBox(
+                  label: context.tr('country'),
+                  value: banknote.country,
+                ),
+              ),
               const SizedBox(width: AppSizes.sm),
-              Expanded(child: _MetaBox(label: 'Currency', value: banknote.currencyCode)),
+              Expanded(
+                child: _MetaBox(
+                  label: context.tr('currencyLabel'),
+                  value: banknote.currencyCode,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: AppSizes.sm),
           Row(
             children: [
-              Expanded(child: _MetaBox(label: 'Material', value: banknote.material)),
+              Expanded(
+                child: _MetaBox(
+                  label: context.tr('material'),
+                  value: banknote.material,
+                ),
+              ),
               const SizedBox(width: AppSizes.sm),
-              Expanded(child: _MetaBox(label: 'Series', value: banknote.seriesYear)),
+              Expanded(
+                child: _MetaBox(
+                  label: context.tr('series'),
+                  value: banknote.seriesYear,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: AppSizes.sm),
-          _MetaBox(label: 'Origin', value: banknote.origin),
+          _MetaBox(label: context.tr('origin'), value: banknote.origin),
         ],
       ),
     );
@@ -558,10 +584,7 @@ class _MetaBox extends StatelessWidget {
   final String label;
   final String value;
 
-  const _MetaBox({
-    required this.label,
-    required this.value,
-  });
+  const _MetaBox({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -571,7 +594,7 @@ class _MetaBox extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSizes.md),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.bgDark : const Color(0xFFF8FAFC),
+        color: AppColors.surfaceSubtle(context),
         borderRadius: BorderRadius.circular(AppSizes.radiusLg),
         border: Border.all(
           color: isDark ? AppColors.borderDark : AppColors.borderLight,
@@ -583,7 +606,9 @@ class _MetaBox extends StatelessWidget {
           Text(
             label.toUpperCase(),
             style: TextStyle(
-              color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+              color: isDark
+                  ? AppColors.textMutedDark
+                  : AppColors.textMutedLight,
               fontSize: 10,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.6,
@@ -591,11 +616,13 @@ class _MetaBox extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           Text(
-            value.trim().isEmpty ? 'Unknown' : value,
+            value.trim().isEmpty ? context.tr('unknown') : value,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+              color: isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -613,10 +640,7 @@ class _HeroPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.md,
-        vertical: 8,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.16),
         borderRadius: BorderRadius.circular(999),

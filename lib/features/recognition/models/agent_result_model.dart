@@ -48,6 +48,8 @@ class AgentResultModel {
     final currency = _firstClean([
       ResponseParser.getValue(json, ['currency']),
       ResponseParser.getValue(data, ['currency']),
+      ResponseParser.getValue(data, ['currency_code']),
+      ResponseParser.getValue(data, ['ma_tien_te']),
       ResponseParser.getValue(data, ['loai_tien']),
       _currencyFromDenomination(denomination),
     ]);
@@ -122,9 +124,11 @@ class AgentResultModel {
     if (text.contains('yolo') ||
         text.contains('ml') ||
         text.contains('vision') ||
+        text.contains('openai') ||
+        text.contains('chatgpt') ||
         text.contains('visual classification') ||
         text.contains('classifier')) {
-      return 'ML/DL Agent';
+      return 'ChatGPT Vision Agent';
     }
 
     if (text.contains('llm') ||
@@ -156,11 +160,15 @@ class AgentResultModel {
   static String _normalizeStatus(String value) {
     final text = value.toLowerCase().trim();
 
-    if (text.contains('completed') || text.contains('success') || text.contains('done')) {
+    if (text.contains('completed') ||
+        text.contains('success') ||
+        text.contains('done')) {
       return 'completed';
     }
 
-    if (text.contains('running') || text.contains('processing') || text.contains('analyzing')) {
+    if (text.contains('running') ||
+        text.contains('processing') ||
+        text.contains('analyzing')) {
       return 'running';
     }
 

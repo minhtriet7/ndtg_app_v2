@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/network_image_view.dart';
@@ -9,8 +10,9 @@ import '../models/user_model.dart';
 
 class ProfileHeader extends StatelessWidget {
   final UserModel user;
+  final bool? isAccountActive;
 
-  const ProfileHeader({super.key, required this.user});
+  const ProfileHeader({super.key, required this.user, this.isAccountActive});
 
   @override
   Widget build(BuildContext context) {
@@ -45,9 +47,9 @@ class ProfileHeader extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'BanknoteAI Account',
-                        style: TextStyle(
+                      Text(
+                        context.tr('banknoteAiAccount'),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
                           fontWeight: FontWeight.w900,
@@ -83,14 +85,24 @@ class ProfileHeader extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppSizes.lg),
-            Row(
+            Wrap(
+              spacing: AppSizes.sm,
+              runSpacing: AppSizes.sm,
               children: [
                 _HeaderChip(
                   text: user.role.toUpperCase(),
                   strong: user.isAdmin,
                 ),
-                const SizedBox(width: AppSizes.sm),
                 _HeaderChip(text: user.provider.toUpperCase()),
+                if (isAccountActive != null)
+                  _HeaderChip(
+                    text: context.tr(
+                      isAccountActive! ? 'accountActive' : 'accountInactive',
+                    ),
+                    color: isAccountActive!
+                        ? AppColors.success
+                        : AppColors.danger,
+                  ),
               ],
             ),
             const SizedBox(height: AppSizes.lg),
@@ -105,7 +117,7 @@ class ProfileHeader extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _Metric(
-                      label: 'Tokens',
+                      label: context.tr('tokens'),
                       value: MoneyFormatter.formatToken(user.tokenBalance),
                       icon: Icons.generating_tokens_rounded,
                     ),
@@ -113,7 +125,7 @@ class ProfileHeader extends StatelessWidget {
                   Container(width: 1, height: 44, color: Colors.white30),
                   Expanded(
                     child: _Metric(
-                      label: 'Scans',
+                      label: context.tr('scansLabel'),
                       value: MoneyFormatter.formatToken(user.totalScans),
                       icon: Icons.document_scanner_rounded,
                     ),
@@ -193,17 +205,26 @@ class _Avatar extends StatelessWidget {
 class _HeaderChip extends StatelessWidget {
   final String text;
   final bool strong;
+  final Color? color;
 
-  const _HeaderChip({required this.text, this.strong = false});
+  const _HeaderChip({required this.text, this.strong = false, this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: strong ? Colors.white.withOpacity(0.24) : Colors.white.withOpacity(0.16),
+        color:
+            color?.withOpacity(0.24) ??
+            (strong
+                ? Colors.white.withOpacity(0.24)
+                : Colors.white.withOpacity(0.16)),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withOpacity(strong ? 0.45 : 0.25)),
+        border: Border.all(
+          color:
+              color?.withOpacity(0.55) ??
+              Colors.white.withOpacity(strong ? 0.45 : 0.25),
+        ),
       ),
       child: Text(
         text,

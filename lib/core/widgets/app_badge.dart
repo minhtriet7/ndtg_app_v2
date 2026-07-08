@@ -3,15 +3,7 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_sizes.dart';
 
-enum BadgeStatus {
-  success,
-  warning,
-  error,
-  danger,
-  info,
-  neutral,
-  pending,
-}
+enum BadgeStatus { success, warning, error, danger, info, neutral, pending }
 
 class AppBadge extends StatelessWidget {
   final String text;
@@ -29,13 +21,10 @@ class AppBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _statusColor(status);
+    final color = _statusColor(context, status);
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.sm,
-        vertical: 5,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.sm, vertical: 5),
       decoration: BoxDecoration(
         color: color.withOpacity(0.10),
         borderRadius: BorderRadius.circular(AppSizes.radiusLg),
@@ -62,7 +51,7 @@ class AppBadge extends StatelessWidget {
     );
   }
 
-  Color _statusColor(BadgeStatus status) {
+  Color _statusColor(BuildContext context, BadgeStatus status) {
     switch (status) {
       case BadgeStatus.success:
         return AppColors.success;
@@ -76,7 +65,7 @@ class AppBadge extends StatelessWidget {
         return AppColors.info;
       case BadgeStatus.neutral:
       default:
-        return AppColors.textMutedLight;
+        return AppColors.textMuted(context);
     }
   }
 }

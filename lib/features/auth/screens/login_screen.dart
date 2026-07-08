@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
@@ -56,17 +59,16 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        RouteNames.main,
-            (route) => false,
-      );
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(RouteNames.main, (route) => false);
       return;
     }
 
     final auth = context.read<AuthController>();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(auth.error ?? 'Login failed. Please try again.'),
+        content: Text(context.tr(auth.error ?? 'loginFailed')),
         backgroundColor: AppColors.danger,
         behavior: SnackBarBehavior.floating,
       ),
@@ -82,13 +84,14 @@ class _LoginScreenState extends State<LoginScreen> {
       resizeToAvoidBottomInset: true,
       body: LoadingOverlay(
         isLoading: auth.isLoading,
-        message: 'Signing you in...',
+        message: context.tr('signingIn'),
         child: _AuthBackground(
           isDark: isDark,
           child: SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: const EdgeInsets.fromLTRB(
                   AppSizes.lg,
                   AppSizes.md,
@@ -102,10 +105,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const _AuthBrandHeader(
+                      _AuthBrandHeader(
                         title: 'BanknoteAI',
-                        subtitle:
-                        'AI-powered Southeast Asian banknote recognition',
+                        subtitle: context.tr('authTagline'),
                       ),
                       const SizedBox(height: AppSizes.xl),
                       AppCard(
@@ -116,18 +118,16 @@ class _LoginScreenState extends State<LoginScreen> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Text(
-                                'Welcome back',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineSmall
+                                context.tr('welcomeBackTitle'),
+                                style: Theme.of(context).textTheme.headlineSmall
                                     ?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: -0.6,
-                                ),
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.6,
+                                    ),
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                'Sign in to scan banknotes, review agent outputs, and manage tokens.',
+                                context.tr('loginDescription'),
                                 style: TextStyle(
                                   color: isDark
                                       ? AppColors.textSecondaryDark
@@ -138,29 +138,49 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: AppSizes.lg),
                               _GoogleButton(
-                                text: 'Continue with Google',
+                                text: context.tr('continueGoogle'),
                                 isLoading: auth.isLoading,
                                 onPressed: _handleGoogleLogin,
                               ),
                               const SizedBox(height: AppSizes.lg),
-                              const _AuthDivider(text: 'or continue with email'),
+                              _AuthDivider(text: context.tr('continueEmail')),
                               const SizedBox(height: AppSizes.lg),
                               AppTextField(
-                                label: 'Email address',
-                                hint: 'you@example.com',
+                                label: context.tr('email'),
+                                hint: context.tr('emailHint'),
                                 controller: _emailController,
                                 keyboardType: TextInputType.emailAddress,
                                 prefixIcon: Icons.email_outlined,
-                                validator: Validators.validateEmail,
+                                validator: (value) {
+                                  final text = value?.trim() ?? '';
+                                  if (text.isEmpty) {
+                                    return context.tr('emailRequired');
+                                  }
+                                  if (!RegExp(
+                                    r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+                                  ).hasMatch(text)) {
+                                    return context.tr('emailInvalid');
+                                  }
+                                  return null;
+                                },
                               ),
                               const SizedBox(height: AppSizes.md),
                               AppTextField(
-                                label: 'Password',
-                                hint: 'Enter your password',
+                                label: context.tr('password'),
+                                hint: context.tr('passwordHint'),
                                 controller: _passwordController,
                                 isPassword: true,
                                 prefixIcon: Icons.lock_outline_rounded,
-                                validator: Validators.validatePassword,
+                                validator: (value) {
+                                  final text = value ?? '';
+                                  if (text.isEmpty) {
+                                    return context.tr('passwordRequired');
+                                  }
+                                  if (text.length < 6) {
+                                    return context.tr('passwordMinLength');
+                                  }
+                                  return null;
+                                },
                               ),
                               const SizedBox(height: AppSizes.xs),
                               Align(
@@ -169,17 +189,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                   onPressed: auth.isLoading
                                       ? null
                                       : () {
-                                    auth.clearError();
-                                    Navigator.of(context).pushNamed(
-                                      RouteNames.forgotPassword,
-                                    );
-                                  },
-                                  child: const Text('Forgot password?'),
+                                          auth.clearError();
+                                          Navigator.of(context).pushNamed(
+                                            RouteNames.forgotPassword,
+                                          );
+                                        },
+                                  child: Text(context.tr('forgotPassword')),
                                 ),
                               ),
                               const SizedBox(height: AppSizes.sm),
                               AppButton(
-                                text: 'Sign in',
+                                text: context.tr('signIn'),
                                 icon: Icons.login_rounded,
                                 isLoading: auth.isLoading,
                                 onPressed: auth.isLoading ? null : _handleLogin,
@@ -190,16 +210,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: AppSizes.lg),
                       _SwitchAuthRow(
-                        text: 'New to BanknoteAI?',
-                        action: 'Create account',
+                        text: context.tr('newToApp'),
+                        action: context.tr('createAccount'),
                         onTap: auth.isLoading
                             ? null
                             : () {
-                          auth.clearError();
-                          Navigator.of(context).pushNamed(
-                            RouteNames.register,
-                          );
-                        },
+                                auth.clearError();
+                                Navigator.of(
+                                  context,
+                                ).pushNamed(RouteNames.register);
+                              },
                       ),
                     ],
                   ),
@@ -217,10 +237,119 @@ class _AuthBackground extends StatelessWidget {
   final bool isDark;
   final Widget child;
 
-  const _AuthBackground({
-    required this.isDark,
-    required this.child,
-  });
+  const _AuthBackground({required this.isDark, required this.child});
+
+  void _showServerSettingsDialog(BuildContext context) {
+    final controller = TextEditingController(text: AppConfig.baseUrl);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark ? AppColors.cardDark : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+          side: BorderSide(
+            color: isDark ? AppColors.borderDark : AppColors.borderLight,
+          ),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.dns_rounded, color: AppColors.primaryTeal),
+            const SizedBox(width: 10),
+            Text(
+              context.tr('serverConfig'),
+              style: TextStyle(
+                color: isDark ? Colors.white : Colors.black87,
+                fontWeight: FontWeight.w900,
+                fontSize: 18,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.tr('serverConfigDesc'),
+              style: const TextStyle(fontSize: 13, height: 1.4),
+            ),
+            const SizedBox(height: AppSizes.md),
+            TextField(
+              controller: controller,
+              style: TextStyle(
+                color: isDark ? Colors.white : Colors.black87,
+                fontSize: 13,
+              ),
+              decoration: InputDecoration(
+                hintText: AppConfig.defaultDevelopmentBaseUrl,
+                labelText: context.tr('baseApiUrl'),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSizes.sm),
+            Text(
+              context.tr('serverConfigFormat'),
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark
+                    ? AppColors.textMutedDark
+                    : AppColors.textMutedLight,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await AppConfig.clearCustomUrl();
+              if (context.mounted) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(context.tr('defaultUrlRestored'))),
+                );
+              }
+            },
+            child: Text(context.tr('reset')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(context.tr('cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final normalized = AppConfig.normalizeApiBaseUrl(controller.text);
+              if (normalized == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(context.tr('invalidApiUrl')),
+                    backgroundColor: AppColors.danger,
+                  ),
+                );
+                return;
+              }
+
+              await AppConfig.saveCustomUrl(normalized);
+              if (context.mounted) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(context.tr('apiUrlSaved'))),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryTeal,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(context.tr('save')),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -230,15 +359,7 @@ class _AuthBackground extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: isDark
             ? AppColors.darkGradient
-            : const LinearGradient(
-          colors: [
-            Color(0xFFF8FBFF),
-            Color(0xFFEFFFFB),
-            Color(0xFFF8FBFF),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+            : AppColors.lightBrandGradient,
       ),
       child: Stack(
         children: [
@@ -257,6 +378,22 @@ class _AuthBackground extends StatelessWidget {
             ),
           ),
           child,
+          if (kDebugMode)
+            Positioned(
+              top: AppSizes.md,
+              right: AppSizes.md,
+              child: SafeArea(
+                child: IconButton(
+                  tooltip: context.tr('serverSettings'),
+                  icon: Icon(
+                    Icons.settings_suggest_rounded,
+                    color: isDark ? Colors.white70 : Colors.black54,
+                    size: 26,
+                  ),
+                  onPressed: () => _showServerSettingsDialog(context),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -267,10 +404,7 @@ class _AuthBrandHeader extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const _AuthBrandHeader({
-    required this.title,
-    required this.subtitle,
-  });
+  const _AuthBrandHeader({required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -303,7 +437,9 @@ class _AuthBrandHeader extends StatelessWidget {
           title,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color: isDark
+                ? AppColors.textPrimaryDark
+                : AppColors.textPrimaryLight,
             fontSize: 27,
             height: 1.05,
             fontWeight: FontWeight.w900,
@@ -315,7 +451,9 @@ class _AuthBrandHeader extends StatelessWidget {
           subtitle,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+            color: isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondaryLight,
             fontSize: 13,
             height: 1.35,
             fontWeight: FontWeight.w700,
@@ -366,7 +504,9 @@ class _AuthDivider extends StatelessWidget {
           child: Text(
             text,
             style: TextStyle(
-              color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+              color: isDark
+                  ? AppColors.textMutedDark
+                  : AppColors.textMutedLight,
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
@@ -400,14 +540,13 @@ class _SwitchAuthRow extends StatelessWidget {
         Text(
           text,
           style: TextStyle(
-            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+            color: isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondaryLight,
             fontWeight: FontWeight.w600,
           ),
         ),
-        TextButton(
-          onPressed: onTap,
-          child: Text(action),
-        ),
+        TextButton(onPressed: onTap, child: Text(action)),
       ],
     );
   }
@@ -426,13 +565,7 @@ class _AuthGlow extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: color,
-        boxShadow: [
-          BoxShadow(
-            color: color,
-            blurRadius: 90,
-            spreadRadius: 34,
-          ),
-        ],
+        boxShadow: [BoxShadow(color: color, blurRadius: 90, spreadRadius: 34)],
       ),
     );
   }

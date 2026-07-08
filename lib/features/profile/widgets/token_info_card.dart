@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
@@ -21,6 +22,7 @@ class TokenInfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isLowBalance = tokenBalance <= 2;
 
     return AppCard(
       padding: const EdgeInsets.all(AppSizes.lg),
@@ -54,7 +56,7 @@ class TokenInfoCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Token Wallet',
+                      context.tr('tokenWallet'),
                       style: TextStyle(
                         color: isDark
                             ? AppColors.textPrimaryDark
@@ -65,7 +67,7 @@ class TokenInfoCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'Multi-agent scan credits',
+                      context.tr('multiAgentScanCredits'),
                       style: TextStyle(
                         color: isDark
                             ? AppColors.textMutedDark
@@ -99,11 +101,11 @@ class TokenInfoCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSizes.sm),
-              const Padding(
-                padding: EdgeInsets.only(bottom: 5),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 5),
                 child: Text(
-                  'tokens',
-                  style: TextStyle(
+                  context.tr('tokens').toLowerCase(),
+                  style: const TextStyle(
                     color: AppColors.primaryTeal,
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
@@ -114,7 +116,7 @@ class TokenInfoCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.sm),
           Text(
-            'Each successful recognition consumes 1 token. Top up when your balance is low.',
+            context.tr('tokenConsumptionDesc'),
             style: TextStyle(
               color: isDark
                   ? AppColors.textSecondaryDark
@@ -123,19 +125,70 @@ class TokenInfoCard extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
+          if (isLowBalance) ...[
+            const SizedBox(height: AppSizes.md),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSizes.md),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withOpacity(isDark ? 0.12 : 0.08),
+                borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+                border: Border.all(color: AppColors.warning.withOpacity(0.28)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    color: AppColors.warning,
+                    size: 21,
+                  ),
+                  const SizedBox(width: AppSizes.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          context.tr('lowTokenTitle'),
+                          style: TextStyle(
+                            color: isDark
+                                ? AppColors.textPrimaryDark
+                                : AppColors.textPrimaryLight,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          context.tr('lowTokenDesc'),
+                          style: TextStyle(
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondaryLight,
+                            height: 1.35,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: AppSizes.lg),
           LayoutBuilder(
             builder: (context, constraints) {
               final compact = constraints.maxWidth < 310;
 
               final topUp = AppButton(
-                text: 'Top Up',
+                text: context.tr('topUp'),
                 icon: Icons.add_card_rounded,
                 onPressed: onTopUp,
               );
 
               final transactions = AppButton(
-                text: 'Transactions',
+                text: context.tr('transactions'),
                 type: AppButtonType.outline,
                 icon: Icons.receipt_long_rounded,
                 onPressed: onTransactions,

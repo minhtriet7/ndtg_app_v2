@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
-import '../../../core/utils/validators.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_text_field.dart';
@@ -14,10 +15,7 @@ import '../models/user_model.dart';
 class EditProfileScreen extends StatefulWidget {
   final UserModel user;
 
-  const EditProfileScreen({
-    super.key,
-    required this.user,
-  });
+  const EditProfileScreen({super.key, required this.user});
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -46,6 +44,38 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile == null) return;
+
+    if (!mounted) return;
+
+    final controller = context.read<ProfileController>();
+    final success = await controller.uploadAvatar(pickedFile.path);
+
+    if (!mounted) return;
+
+    if (success) {
+      _avatarController.text = controller.profile?.avatarUrl ?? '';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr('profileUpdated')),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr(controller.error ?? 'photoUpdateFailed')),
+          backgroundColor: AppColors.danger,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   Future<void> _save() async {
     FocusScope.of(context).unfocus();
 
@@ -63,8 +93,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profile updated successfully.'),
+        SnackBar(
+          content: Text(context.tr('profileUpdated')),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
         ),
@@ -75,7 +105,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(controller.error ?? 'Unable to update your profile.'),
+        content: Text(controller.error ?? context.tr('profileUpdateFailed')),
         backgroundColor: AppColors.danger,
         behavior: SnackBarBehavior.floating,
       ),
@@ -88,9 +118,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Edit Profile'),
-      ),
+      appBar: AppBar(title: Text(context.tr('editProfile'))),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(
@@ -106,6 +134,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 user: widget.user,
                 avatarUrlController: _avatarController,
                 nameController: _nameController,
+                onPickImage: _pickImage,
               ),
               const SizedBox(height: AppSizes.lg),
               AppCard(
@@ -116,7 +145,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'Account Information',
+                        context.tr('accountInformation'),
                         style: TextStyle(
                           color: isDark
                               ? AppColors.textPrimaryDark
@@ -128,7 +157,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Update your public profile details used across BanknoteAI.',
+                        context.tr('accountInformationDesc'),
                         style: TextStyle(
                           color: isDark
                               ? AppColors.textMutedDark
@@ -139,31 +168,36 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ),
                       const SizedBox(height: AppSizes.lg),
                       AppTextField(
-                        label: 'Full Name',
-                        hint: 'Enter your full name',
+                        label: context.tr('fullName'),
+                        hint: context.tr('enterFullName'),
                         controller: _nameController,
                         prefixIcon: Icons.person_outline_rounded,
-                        validator: Validators.required('Full name'),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return context.tr('nameRequired');
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: AppSizes.md),
                       AppTextField(
-                        label: 'Phone Number',
-                        hint: 'Optional',
+                        label: context.tr('phoneNumber'),
+                        hint: context.tr('optional'),
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
                         prefixIcon: Icons.phone_outlined,
                       ),
                       const SizedBox(height: AppSizes.md),
                       AppTextField(
-                        label: 'Avatar URL',
-                        hint: 'Optional image URL',
+                        label: context.tr('pastePublicImageUrl'),
+                        hint: context.tr('optionalImageUrl'),
                         controller: _avatarController,
                         keyboardType: TextInputType.url,
-                        prefixIcon: Icons.image_outlined,
+                        prefixIcon: Icons.link_rounded,
                       ),
                       const SizedBox(height: AppSizes.xl),
                       AppButton(
-                        text: 'Save Changes',
+                        text: context.tr('saveChanges'),
                         icon: Icons.save_rounded,
                         isLoading: isSaving,
                         onPressed: isSaving ? null : _save,
@@ -184,11 +218,13 @@ class _ProfileEditHero extends StatelessWidget {
   final UserModel user;
   final TextEditingController avatarUrlController;
   final TextEditingController nameController;
+  final VoidCallback? onPickImage;
 
   const _ProfileEditHero({
     required this.user,
     required this.avatarUrlController,
     required this.nameController,
+    this.onPickImage,
   });
 
   @override
@@ -234,72 +270,114 @@ class _ProfileEditHero extends StatelessWidget {
                   child: ClipOval(
                     child: url.isEmpty
                         ? Center(
-                      child: Text(
-                        user.initials,
-                        style: const TextStyle(
-                          color: AppColors.primaryTeal,
-                          fontSize: 26,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    )
+                            child: Text(
+                              user.initials,
+                              style: const TextStyle(
+                                color: AppColors.primaryTeal,
+                                fontSize: 26,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          )
                         : NetworkImageView(
-                      imageUrl: url,
-                      width: 76,
-                      height: 76,
-                      fit: BoxFit.cover,
-                      borderRadius: 100,
-                    ),
+                            imageUrl: url,
+                            width: 76,
+                            height: 76,
+                            fit: BoxFit.cover,
+                            borderRadius: 100,
+                          ),
                   ),
                 );
               },
             ),
             const SizedBox(width: AppSizes.md),
             Expanded(
-              child: AnimatedBuilder(
-                animation: nameController,
-                builder: (context, _) {
-                  final displayName = nameController.text.trim().isEmpty
-                      ? user.fullName
-                      : nameController.text.trim();
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AnimatedBuilder(
+                    animation: nameController,
+                    builder: (context, _) {
+                      final displayName = nameController.text.trim().isEmpty
+                          ? user.fullName
+                          : nameController.text.trim();
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'BanknoteAI Profile',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            context.tr('profile'),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            user.email,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: AppSizes.md),
+                  InkWell(
+                    onTap: onPickImage,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.md,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        displayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.5,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.camera_alt_outlined,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            context.tr('changePhoto'),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        user.email,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  );
-                },
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

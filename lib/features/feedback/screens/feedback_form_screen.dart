@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
-import '../../../core/utils/validators.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_dropdown.dart';
@@ -44,8 +44,8 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Feedback submitted. Thank you for helping improve BanknoteAI.'),
+        SnackBar(
+          content: Text(context.tr('feedbackSubmitted')),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
         ),
@@ -54,7 +54,7 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
     } else if (controller.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(controller.error!),
+          content: Text(context.tr(controller.error!)),
           backgroundColor: AppColors.danger,
           behavior: SnackBarBehavior.floating,
         ),
@@ -68,7 +68,7 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Send Feedback')),
+      appBar: AppBar(title: Text(context.tr('sendFeedback'))),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSizes.lg),
@@ -85,30 +85,36 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
                     borderRadius: BorderRadius.circular(AppSizes.radiusXxl),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primaryTeal.withOpacity(isDark ? 0.08 : 0.20),
+                        color: AppColors.primaryTeal.withOpacity(
+                          isDark ? 0.08 : 0.20,
+                        ),
                         blurRadius: 28,
                         offset: const Offset(0, 14),
                       ),
                     ],
                   ),
-                  child: const Column(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.forum_rounded, color: Colors.white, size: 36),
-                      SizedBox(height: AppSizes.md),
+                      const Icon(
+                        Icons.forum_rounded,
+                        color: Colors.white,
+                        size: 36,
+                      ),
+                      const SizedBox(height: AppSizes.md),
                       Text(
-                        'Share product feedback',
-                        style: TextStyle(
+                        context.tr('shareProductFeedback'),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 24,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.5,
                         ),
                       ),
-                      SizedBox(height: AppSizes.sm),
+                      const SizedBox(height: AppSizes.sm),
                       Text(
-                        'Report recognition issues, suggest features, or tell us how the workflow feels.',
-                        style: TextStyle(
+                        context.tr('shareProductFeedbackDesc'),
+                        style: const TextStyle(
                           color: Colors.white70,
                           height: 1.45,
                           fontWeight: FontWeight.w600,
@@ -126,38 +132,55 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'How was your experience?',
+                        context.tr('experienceQuestion'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                          color: isDark
+                              ? AppColors.textPrimaryDark
+                              : AppColors.textPrimaryLight,
                           fontSize: 20,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Rate your latest BanknoteAI session.',
+                        context.tr('rateLatestSession'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondaryLight,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: AppSizes.lg),
                       RatingSelector(
                         rating: _rating,
-                        onRatingChanged: (value) => setState(() => _rating = value),
+                        onRatingChanged: (value) =>
+                            setState(() => _rating = value),
                       ),
                       const SizedBox(height: AppSizes.lg),
                       AppDropdown<String>(
-                        label: 'Feedback type',
+                        label: context.tr('feedbackType'),
                         value: _type,
                         prefixIcon: Icons.tune_rounded,
-                        items: const [
-                          DropdownMenuItem(value: 'general', child: Text('General feedback')),
-                          DropdownMenuItem(value: 'bug', child: Text('Bug report')),
-                          DropdownMenuItem(value: 'recognition', child: Text('Recognition issue')),
-                          DropdownMenuItem(value: 'suggestion', child: Text('Feature suggestion')),
+                        items: [
+                          DropdownMenuItem(
+                            value: 'general',
+                            child: Text(context.tr('feedbackGeneral')),
+                          ),
+                          DropdownMenuItem(
+                            value: 'bug',
+                            child: Text(context.tr('feedbackBug')),
+                          ),
+                          DropdownMenuItem(
+                            value: 'recognition',
+                            child: Text(context.tr('feedbackRecognition')),
+                          ),
+                          DropdownMenuItem(
+                            value: 'suggestion',
+                            child: Text(context.tr('feedbackSuggestion')),
+                          ),
                         ],
                         onChanged: (value) {
                           if (value != null) setState(() => _type = value);
@@ -165,15 +188,20 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
                       ),
                       const SizedBox(height: AppSizes.md),
                       AppTextField(
-                        label: 'Message',
-                        hint: 'Describe what happened or what we should improve...',
+                        label: context.tr('message'),
+                        hint: context.tr('feedbackMessageHint'),
                         controller: _messageController,
                         maxLines: 6,
-                        validator: (value) => Validators.validateRequired(value, fieldName: 'Message'),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return context.tr('messageRequired');
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: AppSizes.xl),
                       AppButton(
-                        text: 'Submit feedback',
+                        text: context.tr('submitFeedback'),
                         icon: Icons.send_rounded,
                         isLoading: isLoading,
                         onPressed: _submit,

@@ -4,6 +4,7 @@ class ApiEndpoints {
   // Auth
   static const String login = '/auth/login';
   static const String register = '/auth/register';
+  static const String refreshToken = '/auth/refresh';
   static const String forgotPassword = '/auth/forgot-password';
   static const String googleLogin = '/auth/google/login';
 
@@ -23,11 +24,12 @@ class ApiEndpoints {
   static const String recognitionStart = '/recognition/tasks';
   static const String recognitionHistory = userHistory;
 
-  static String recognitionTaskStatus(String taskId) => '/recognition/tasks/$taskId';
+  static String recognitionTaskStatus(String taskId) =>
+      '/recognition/tasks/$taskId';
   static String recognitionDetail(String id) => '/recognition/$id';
 
   // Compatibility aliases for older code
-  static const String recognitionAnalyze = recognitionScan;
+  static const String recognitionAnalyze = recognitionStart;
   static String recognitionTask(String taskId) => recognitionTaskStatus(taskId);
 
   // Currency
@@ -39,6 +41,7 @@ class ApiEndpoints {
   static String banknoteDetail(String id) => '/banknotes/$id';
 
   // Token packages / payment
+  static const String paymentGatewaySettings = '/payment/gateway-settings';
   static const String tokenPackages = '/payment/token-packages';
   static const String paymentCreate = '/payment/buy';
   static String paymentStatus(String paymentId) => '/payment/status/$paymentId';
@@ -48,8 +51,8 @@ class ApiEndpoints {
   static const String myUserTransactions = '/users/me/transactions';
 
   // Feedback
-  static const String feedback = '/feedback';
-  static const String myFeedback = '/feedback/my';
+  static const String feedback = '/feedback/';
+  static const String myFeedback = feedback;
 
   // Admin lite
   static const String adminDashboardSummary = '/admin/dashboard/summary';

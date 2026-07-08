@@ -21,6 +21,7 @@ class RouteNames {
   static const String profile = '/profile';
   static const String settings = '/settings';
   static const String userGuide = '/user-guide';
+  static const String systemArchitecture = '/system-architecture';
 
   static const String pricing = '/pricing';
   static const String checkout = '/checkout';

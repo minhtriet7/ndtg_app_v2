@@ -12,6 +12,7 @@ class AppCard extends StatefulWidget {
   final bool elevated;
   final double radius;
   final EdgeInsetsGeometry? margin;
+  final Color? glowColor;
 
   const AppCard({
     super.key,
@@ -23,6 +24,7 @@ class AppCard extends StatefulWidget {
     this.elevated = true,
     this.radius = AppSizes.radiusXl,
     this.margin,
+    this.glowColor,
   });
 
   @override
@@ -35,19 +37,48 @@ class _AppCardState extends State<AppCard> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Custom borders for glowing card states
+    final borderSide = widget.glowColor != null
+        ? BorderSide(
+            color: widget.glowColor!.withOpacity(isDark ? 0.45 : 0.35),
+            width: 1.2,
+          )
+        : BorderSide(
+            color: isDark ? AppColors.borderDark : AppColors.borderLight,
+            width: 0.8,
+          );
+
     final decoration = BoxDecoration(
-      color: widget.backgroundColor ?? (isDark ? AppColors.cardDark : AppColors.cardLight),
+      color:
+          widget.backgroundColor ??
+          (isDark ? AppColors.cardDark : AppColors.cardLight),
       borderRadius: BorderRadius.circular(widget.radius),
-      border: widget.hasBorder ? Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight) : null,
-      boxShadow: widget.elevated
-          ? [
-        BoxShadow(
-          color: isDark ? Colors.black.withOpacity(0.20) : AppColors.slate900.withOpacity(0.08),
-          blurRadius: 24,
-          offset: const Offset(0, 10),
-        ),
-      ]
-          : [],
+      border: widget.hasBorder
+          ? Border(
+              top: borderSide,
+              left: borderSide,
+              right: borderSide,
+              bottom: borderSide,
+            )
+          : null,
+      boxShadow: [
+        if (widget.glowColor != null)
+          BoxShadow(
+            color: widget.glowColor!.withOpacity(isDark ? 0.24 : 0.16),
+            blurRadius: 28,
+            spreadRadius: -4,
+            offset: const Offset(0, 10),
+          )
+        else if (widget.elevated)
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withOpacity(0.35)
+                : AppColors.slate900.withOpacity(0.06),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+      ],
     );
 
     final content = AnimatedScale(

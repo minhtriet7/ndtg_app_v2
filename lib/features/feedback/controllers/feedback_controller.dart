@@ -22,7 +22,7 @@ class FeedbackController extends ChangeNotifier {
     try {
       _feedbacks = await _service.getMyFeedbacks();
     } catch (e) {
-      _error = e is ApiException ? e.message : 'Unable to load your feedback.';
+      _error = e is ApiException ? e.message : 'feedbackLoadError';
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -43,13 +43,13 @@ class FeedbackController extends ChangeNotifier {
       final newFeedback = await _service.createFeedback(
         message: message,
         rating: rating,
-        type: type,
-        recognitionResultId: recognitionResultId,
+        feedbackType: type,
+        relatedResultId: recognitionResultId,
       );
       _feedbacks.insert(0, newFeedback);
       return true;
     } catch (e) {
-      _error = e is ApiException ? e.message : 'Unable to submit feedback.';
+      _error = e is ApiException ? e.message : 'feedbackSubmitError';
       return false;
     } finally {
       _isLoading = false;

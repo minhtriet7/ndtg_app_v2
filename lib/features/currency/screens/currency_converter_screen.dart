@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/widgets/app_badge.dart';
@@ -25,8 +26,9 @@ class CurrencyConverterScreen extends StatefulWidget {
 }
 
 class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
-  final TextEditingController _amountController =
-  TextEditingController(text: '1');
+  final TextEditingController _amountController = TextEditingController(
+    text: '1',
+  );
 
   @override
   void initState() {
@@ -49,10 +51,10 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Currency'),
+        title: Text(context.tr('currency')),
         actions: [
           IconButton(
-            tooltip: 'Refresh rates',
+            tooltip: context.tr('refreshRates'),
             onPressed: controller.fetchRates,
             icon: const Icon(Icons.refresh_rounded),
           ),
@@ -65,20 +67,19 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
             ? const _CurrencyLoading()
             : controller.error != null && controller.rates.isEmpty
             ? ErrorState(
-          message: controller.error!,
-          onRetry: controller.fetchRates,
-        )
+                message: controller.error!,
+                onRetry: controller.fetchRates,
+              )
             : controller.rates.isEmpty
-            ? const EmptyState(
-          title: 'No exchange rates',
-          message:
-          'No active currency rates are available. Please try again later.',
-          icon: Icons.currency_exchange_rounded,
-        )
+            ? EmptyState(
+                title: context.tr('noExchangeRates'),
+                message: context.tr('noExchangeRatesDesc'),
+                icon: Icons.currency_exchange_rounded,
+              )
             : _CurrencyContent(
-          controller: controller,
-          amountController: _amountController,
-        ),
+                controller: controller,
+                amountController: _amountController,
+              ),
       ),
     );
   }
@@ -160,7 +161,7 @@ class _CurrencyContent extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Exchange calculator',
+                          context.tr('exchangeCalculator'),
                           style: TextStyle(
                             color: isDark
                                 ? AppColors.textPrimaryDark
@@ -172,7 +173,7 @@ class _CurrencyContent extends StatelessWidget {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          'Backend rate first, local VND-based fallback if unavailable.',
+                          context.tr('exchangeCalculatorDesc'),
                           style: TextStyle(
                             color: isDark
                                 ? AppColors.textMutedDark
@@ -188,7 +189,7 @@ class _CurrencyContent extends StatelessWidget {
               ),
               const SizedBox(height: AppSizes.lg),
               CurrencyInputBox(
-                title: 'You send',
+                title: context.tr('youSend'),
                 controller: amountController,
                 selectedCurrency: controller.fromCurrency,
                 currencies: controller.rates,
@@ -225,7 +226,7 @@ class _CurrencyContent extends StatelessWidget {
               ),
               const SizedBox(height: AppSizes.md),
               CurrencyInputBox(
-                title: 'Recipient gets',
+                title: context.tr('recipientGets'),
                 valueText: MoneyFormatter.formatCurrencyAmount(
                   controller.convertedAmount,
                   controller.toCurrency?.targetCurrency ?? '',
@@ -241,8 +242,8 @@ class _CurrencyContent extends StatelessWidget {
                   Expanded(
                     child: AppButton(
                       text: controller.isConverting
-                          ? 'Converting...'
-                          : 'Convert',
+                          ? context.tr('converting')
+                          : context.tr('convert'),
                       icon: Icons.calculate_rounded,
                       isLoading: controller.isConverting,
                       onPressed: controller.convertWithBackend,
@@ -269,7 +270,7 @@ class _CurrencyContent extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                'Quick conversions to VND',
+                context.tr('quickConversionsVnd'),
                 style: TextStyle(
                   color: isDark
                       ? AppColors.textPrimaryDark
@@ -281,7 +282,8 @@ class _CurrencyContent extends StatelessWidget {
               ),
             ),
             AppBadge(
-              text: '${controller.quickCurrencies.length} rates',
+              text:
+                  '${controller.quickCurrencies.length} ${context.tr('rates')}',
               status: BadgeStatus.info,
               uppercase: false,
             ),
@@ -298,9 +300,8 @@ class _CurrencyContent extends StatelessWidget {
             crossAxisSpacing: AppSizes.md,
             childAspectRatio: 1.08,
           ),
-          itemBuilder: (context, index) => QuickConvertCard(
-            rate: controller.quickCurrencies[index],
-          ),
+          itemBuilder: (context, index) =>
+              QuickConvertCard(rate: controller.quickCurrencies[index]),
         ),
       ],
     );
@@ -352,13 +353,13 @@ class _CurrencyHero extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: AppSizes.md),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Southeast Asia FX Desk',
-                        style: TextStyle(
+                        context.tr('fxDeskTitle'),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 22,
                           height: 1.1,
@@ -366,10 +367,10 @@ class _CurrencyHero extends StatelessWidget {
                           letterSpacing: -0.5,
                         ),
                       ),
-                      SizedBox(height: 5),
+                      const SizedBox(height: 5),
                       Text(
-                        'Fast VND-based conversions for banknote workflows.',
-                        style: TextStyle(
+                        context.tr('fxDeskDesc'),
+                        style: const TextStyle(
                           color: Colors.white70,
                           fontWeight: FontWeight.w600,
                           height: 1.35,
@@ -392,22 +393,24 @@ class _CurrencyHero extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _HeroMetric(
-                      label: 'Active rates',
+                      label: context.tr('activeRates'),
                       value: controller.rates.length.toString(),
                     ),
                   ),
                   Container(width: 1, height: 38, color: Colors.white24),
                   Expanded(
                     child: _HeroMetric(
-                      label: 'Base market',
+                      label: context.tr('baseMarket'),
                       value: 'VND',
                     ),
                   ),
                   Container(width: 1, height: 38, color: Colors.white24),
                   Expanded(
                     child: _HeroMetric(
-                      label: 'Status',
-                      value: controller.hasStaleRate ? 'Stale' : 'Fresh',
+                      label: context.tr('statusLabel'),
+                      value: context.tr(
+                        controller.hasStaleRate ? 'stale' : 'fresh',
+                      ),
                     ),
                   ),
                 ],
@@ -424,10 +427,7 @@ class _HeroMetric extends StatelessWidget {
   final String label;
   final String value;
 
-  const _HeroMetric({
-    required this.label,
-    required this.value,
-  });
+  const _HeroMetric({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -484,7 +484,7 @@ class _RateInfoPanel extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Rate intelligence',
+                  context.tr('rateIntelligence'),
                   style: TextStyle(
                     color: isDark
                         ? AppColors.textPrimaryDark
@@ -495,11 +495,37 @@ class _RateInfoPanel extends StatelessWidget {
                 ),
               ),
               if (from.isStale || to.isStale)
-                const AppBadge(text: 'Stale', status: BadgeStatus.warning)
+                AppBadge(text: context.tr('stale'), status: BadgeStatus.warning)
               else
-                const AppBadge(text: 'Fresh', status: BadgeStatus.success),
+                AppBadge(
+                  text: context.tr('fresh'),
+                  status: BadgeStatus.success,
+                ),
             ],
           ),
+          if (from.isStale || to.isStale) ...[
+            const SizedBox(height: AppSizes.sm),
+            Row(
+              children: [
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  size: 16,
+                  color: AppColors.warning,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    context.tr('staleRateWarning'),
+                    style: const TextStyle(
+                      color: AppColors.warning,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: AppSizes.md),
           Wrap(
             spacing: AppSizes.sm,
@@ -544,9 +570,11 @@ class _RateInfoPanel extends StatelessWidget {
           if (from.lastUpdated != null) ...[
             const SizedBox(height: AppSizes.sm),
             Text(
-              'Last updated: ${DateFormatter.formatDateTime(from.lastUpdated!.toIso8601String())}',
+              '${context.tr('lastUpdated')}: ${DateFormatter.formatDateTime(from.lastUpdated!.toIso8601String())}',
               style: TextStyle(
-                color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+                color: isDark
+                    ? AppColors.textMutedDark
+                    : AppColors.textMutedLight,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),

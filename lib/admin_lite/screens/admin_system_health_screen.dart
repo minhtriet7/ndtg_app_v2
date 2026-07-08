@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../core/utils/json_helper.dart';
 import '../../core/widgets/app_badge.dart';
 import '../../core/widgets/app_card.dart';
@@ -35,7 +36,7 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('System Health'),
+        title: Text(context.tr('systemHealth')),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
@@ -129,18 +130,18 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
                   size: 38,
                 ),
                 const SizedBox(height: AppSizes.md),
-                const Text(
-                  'Backend health overview',
-                  style: TextStyle(
+                Text(
+                  context.tr('backendHealthOverview'),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Live status summary from the real admin system endpoint.',
-                  style: TextStyle(
+                Text(
+                  context.tr('backendHealthOverviewDesc'),
+                  style: const TextStyle(
                     color: Colors.white70,
                     height: 1.4,
                     fontWeight: FontWeight.w600,
@@ -157,27 +158,39 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
           ),
         ),
         const SizedBox(height: AppSizes.md),
-        _HealthTile(title: 'API Service', value: api, icon: Icons.api_outlined),
+        _HealthTile(
+          title: context.tr('apiService'),
+          value: api,
+          icon: Icons.api_outlined,
+        ),
         const SizedBox(height: AppSizes.md),
-        _HealthTile(title: 'Database', value: database, icon: Icons.storage_outlined),
+        _HealthTile(
+          title: context.tr('database'),
+          value: database,
+          icon: Icons.storage_outlined,
+        ),
         const SizedBox(height: AppSizes.md),
-        _HealthTile(title: 'AI Pipeline', value: ai, icon: Icons.smart_toy_outlined),
+        _HealthTile(
+          title: context.tr('recognitionPipeline'),
+          value: ai,
+          icon: Icons.monitor_heart_outlined,
+        ),
         const SizedBox(height: AppSizes.xl),
         AppCard(
           backgroundColor: const Color(0xFF020617),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Raw Health Payload',
-                style: TextStyle(
+              Text(
+                context.tr('rawHealthPayload'),
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w900,
                 ),
               ),
               const SizedBox(height: AppSizes.md),
               Text(
-                health.isEmpty ? 'No health payload returned.' : rawJson,
+                health.isEmpty ? context.tr('noHealthPayload') : rawJson,
                 style: const TextStyle(
                   color: Color(0xFFD1FAE5),
                   fontFamily: 'monospace',
@@ -193,10 +206,10 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
   }
 
   static String _readStatus(
-      Map<String, dynamic> json,
-      List<String> paths, {
-        String fallback = 'unknown',
-      }) {
+    Map<String, dynamic> json,
+    List<String> paths, {
+    String fallback = 'unknown',
+  }) {
     for (final path in paths) {
       final value = JsonHelper.getValue(json, [path]);
       final text = value?.toString().trim();
@@ -210,8 +223,14 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
   static BadgeStatus _statusBadge(String status) {
     final value = status.toLowerCase();
 
-    if (['ok', 'healthy', 'success', 'online', 'running', 'up']
-        .contains(value)) {
+    if ([
+      'ok',
+      'healthy',
+      'success',
+      'online',
+      'running',
+      'up',
+    ].contains(value)) {
       return BadgeStatus.success;
     }
 
@@ -265,17 +284,10 @@ class _HealthTile extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
             ),
           ),
-          AppBadge(
-            text: value,
-            status: status,
-            uppercase: false,
-          ),
+          AppBadge(text: value, status: status, uppercase: false),
         ],
       ),
     );
@@ -286,8 +298,14 @@ class AdminSystemHealthScreenStateHelper {
   static BadgeStatus statusBadge(String status) {
     final value = status.toLowerCase();
 
-    if (['ok', 'healthy', 'success', 'online', 'running', 'up']
-        .contains(value)) {
+    if ([
+      'ok',
+      'healthy',
+      'success',
+      'online',
+      'running',
+      'up',
+    ].contains(value)) {
       return BadgeStatus.success;
     }
 

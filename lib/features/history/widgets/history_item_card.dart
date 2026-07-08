@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/app_badge.dart';
 import '../../../core/widgets/app_card.dart';
@@ -13,10 +14,7 @@ import '../../recognition/screens/result_detail_screen.dart';
 class HistoryItemCard extends StatelessWidget {
   final BanknoteResultModel result;
 
-  const HistoryItemCard({
-    super.key,
-    required this.result,
-  });
+  const HistoryItemCard({super.key, required this.result});
 
   BadgeStatus _badgeStatus(String status) {
     final normalized = status.toLowerCase();
@@ -47,7 +45,7 @@ class HistoryItemCard extends StatelessWidget {
 
     if (denomination.toLowerCase() == 'unknown' &&
         currency.toLowerCase() == 'unknown') {
-      return 'Unknown banknote';
+      return '';
     }
 
     return FinalResultModel.formatMoneyLabel(denomination, currency);
@@ -59,19 +57,18 @@ class HistoryItemCard extends StatelessWidget {
 
     final consensusText = result.finalResult.matchedAgents.trim().isNotEmpty
         ? result.finalResult.matchedAgents
-        : 'Consensus N/A';
+        : context.tr('noDataYet');
 
-    final country = result.finalResult.country.trim().isEmpty ||
-        result.finalResult.country.toLowerCase() == 'unknown'
-        ? 'Country not confirmed'
+    final country =
+        result.finalResult.country.trim().isEmpty ||
+            result.finalResult.country.toLowerCase() == 'unknown'
+        ? context.tr('status_unknown')
         : result.finalResult.country;
 
     return AppCard(
       onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ResultDetailScreen(result: result),
-          ),
+          MaterialPageRoute(builder: (_) => ResultDetailScreen(result: result)),
         );
       },
       padding: const EdgeInsets.all(AppSizes.md),
@@ -89,17 +86,17 @@ class HistoryItemCard extends StatelessWidget {
             clipBehavior: Clip.antiAlias,
             child: result.imageUrl.isNotEmpty
                 ? NetworkImageView(
-              imageUrl: result.imageUrl,
-              borderRadius: AppSizes.radiusLg,
-              fit: BoxFit.cover,
-            )
+                    imageUrl: result.imageUrl,
+                    borderRadius: AppSizes.radiusLg,
+                    fit: BoxFit.cover,
+                  )
                 : Container(
-              color: AppColors.primaryTeal.withOpacity(0.08),
-              child: const Icon(
-                Icons.account_balance_rounded,
-                color: AppColors.primaryTeal,
-              ),
-            ),
+                    color: AppColors.primaryTeal.withOpacity(0.08),
+                    child: const Icon(
+                      Icons.account_balance_rounded,
+                      color: AppColors.primaryTeal,
+                    ),
+                  ),
           ),
           const SizedBox(width: AppSizes.md),
           Expanded(
@@ -110,7 +107,7 @@ class HistoryItemCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        _title,
+                        _title.isEmpty ? context.tr('status_unknown') : _title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -125,7 +122,7 @@ class HistoryItemCard extends StatelessWidget {
                     ),
                     const SizedBox(width: AppSizes.sm),
                     AppBadge(
-                      text: result.status.replaceAll('_', ' '),
+                      text: context.trStatus(result.status),
                       status: _badgeStatus(result.status),
                     ),
                   ],

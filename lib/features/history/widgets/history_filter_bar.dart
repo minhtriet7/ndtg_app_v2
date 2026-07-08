@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_text_field.dart';
@@ -92,7 +93,7 @@ class _HistoryFilterBarState extends State<HistoryFilterBar> {
               const SizedBox(width: AppSizes.md),
               Expanded(
                 child: Text(
-                  'Refine results',
+                  context.tr('refineResults'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w900,
                   ),
@@ -102,8 +103,8 @@ class _HistoryFilterBarState extends State<HistoryFilterBar> {
           ),
           const SizedBox(height: AppSizes.lg),
           AppTextField(
-            label: 'Search history',
-            hint: 'Country, denomination, currency...',
+            label: context.tr('searchHistory'),
+            hint: context.tr('searchHistoryHint'),
             controller: _searchController,
             prefixIcon: Icons.search_rounded,
             onChanged: widget.onSearchChanged,
@@ -113,23 +114,24 @@ class _HistoryFilterBarState extends State<HistoryFilterBar> {
             children: [
               Expanded(
                 child: _DropdownShell(
-                  label: 'Status',
+                  label: context.tr('statusLabel'),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       isExpanded: true,
                       value: _safeStatusValue(widget.statusFilter),
                       borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-                      items: const {
-                        'all': 'All',
-                        'completed': 'Completed',
-                        'needs_review': 'Needs review',
-                        'failed': 'Failed',
-                      }.entries.map((entry) {
-                        return DropdownMenuItem(
-                          value: entry.key,
-                          child: Text(entry.value),
-                        );
-                      }).toList(),
+                      items: ['all', 'completed', 'needs_review', 'failed'].map(
+                        (status) {
+                          return DropdownMenuItem(
+                            value: status,
+                            child: Text(
+                              status == 'all'
+                                  ? context.tr('all')
+                                  : context.trStatus(status),
+                            ),
+                          );
+                        },
+                      ).toList(),
                       onChanged: (value) {
                         if (value != null) widget.onStatusChanged(value);
                       },
@@ -140,7 +142,7 @@ class _HistoryFilterBarState extends State<HistoryFilterBar> {
               const SizedBox(width: AppSizes.md),
               Expanded(
                 child: _DropdownShell(
-                  label: 'Currency',
+                  label: context.tr('currencyLabel'),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       isExpanded: true,
@@ -152,7 +154,7 @@ class _HistoryFilterBarState extends State<HistoryFilterBar> {
                       items: ['all', ...widget.currencies].map((code) {
                         return DropdownMenuItem(
                           value: code,
-                          child: Text(code == 'all' ? 'All' : code),
+                          child: Text(code == 'all' ? context.tr('all') : code),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -169,7 +171,7 @@ class _HistoryFilterBarState extends State<HistoryFilterBar> {
             children: [
               Expanded(
                 child: AppButton(
-                  text: 'Reset',
+                  text: context.tr('reset'),
                   type: AppButtonType.outline,
                   icon: Icons.refresh_rounded,
                   onPressed: _reset,
@@ -178,7 +180,7 @@ class _HistoryFilterBarState extends State<HistoryFilterBar> {
               const SizedBox(width: AppSizes.md),
               Expanded(
                 child: AppButton(
-                  text: 'Apply',
+                  text: context.tr('apply'),
                   icon: Icons.check_rounded,
                   onPressed: widget.onApply,
                 ),
@@ -205,10 +207,7 @@ class _DropdownShell extends StatelessWidget {
   final String label;
   final Widget child;
 
-  const _DropdownShell({
-    required this.label,
-    required this.child,
-  });
+  const _DropdownShell({required this.label, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -222,7 +221,9 @@ class _DropdownShell extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w900,
-            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+            color: isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondaryLight,
           ),
         ),
         const SizedBox(height: AppSizes.xs),

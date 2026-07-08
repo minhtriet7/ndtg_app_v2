@@ -7,6 +7,8 @@ import '../../../core/storage/local_storage.dart';
 import '../../../core/storage/secure_storage.dart';
 import '../../../routes/route_names.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../../payment/controllers/payment_controller.dart';
+import '../../recognition/controllers/recognition_controller.dart';
 import '../data/profile_service.dart';
 import '../models/user_model.dart';
 
@@ -67,21 +69,50 @@ class ProfileController extends ChangeNotifier {
     }
   }
 
+  Future<bool> uploadAvatar(String filePath) async {
+    if (_isSaving) return false;
+
+    _isSaving = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      _profile = await _service.uploadAvatar(filePath);
+      return true;
+    } catch (e) {
+      _error = e is ApiException ? e.message : 'photoUpdateFailed';
+      return false;
+    } finally {
+      _isSaving = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> logout(BuildContext context) async {
+    if (context.mounted) {
+      context.read<RecognitionController>().clearState();
+      await context.read<PaymentController>().clearCheckout();
+    }
+
     await SecureStorage.instance.clearAll();
     await LocalStorage.instance.remove(StorageKeys.userJson);
     await LocalStorage.instance.remove(StorageKeys.activeRecognitionTaskId);
+    await LocalStorage.instance.remove(
+      StorageKeys.activeRecognitionTaskStartedAt,
+    );
+    await LocalStorage.instance.remove(StorageKeys.activeRecognitionInput);
+    await LocalStorage.instance.remove(StorageKeys.lastRecognitionResultId);
     await LocalStorage.instance.remove(StorageKeys.activePaymentId);
+    await LocalStorage.instance.remove(StorageKeys.activePaymentPayload);
 
     if (context.mounted) {
       await context.read<AuthController>().logout();
     }
 
     if (context.mounted) {
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        RouteNames.login,
-            (route) => false,
-      );
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(RouteNames.login, (route) => false);
     }
   }
 

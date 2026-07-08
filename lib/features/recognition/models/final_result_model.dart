@@ -4,6 +4,7 @@ class FinalResultModel {
   final String country;
   final String denomination;
   final String currency;
+  final double confidence;
   final String status;
   final String method;
   final String matchedAgents;
@@ -25,6 +26,7 @@ class FinalResultModel {
     required this.country,
     required this.denomination,
     required this.currency,
+    required this.confidence,
     required this.status,
     required this.method,
     required this.matchedAgents,
@@ -48,6 +50,7 @@ class FinalResultModel {
       country: 'Unknown',
       denomination: 'Unknown',
       currency: 'Unknown',
+      confidence: 0,
       status: 'Unknown',
       method: '',
       matchedAgents: '0/3 agents',
@@ -71,30 +74,23 @@ class FinalResultModel {
     final json = ResponseParser.parseMap(rawValue);
 
     final detectedObjects = _listOfMap(
-      ResponseParser.getValue(
-        json,
-        ['detected_objects', 'objects'],
-        defaultValue: const [],
-      ),
+      ResponseParser.getValue(json, [
+        'detected_objects',
+        'objects',
+      ], defaultValue: const []),
     );
 
     final summary = _listOfMap(
-      ResponseParser.getValue(
-        json,
-        ['summary'],
-        defaultValue: const [],
-      ),
+      ResponseParser.getValue(json, ['summary'], defaultValue: const []),
     );
 
     final validVotes = _listOfMap(
-      ResponseParser.getValue(
-        json,
-        ['valid_votes'],
-        defaultValue: const [],
-      ),
+      ResponseParser.getValue(json, ['valid_votes'], defaultValue: const []),
     );
 
-    final firstSummary = summary.isNotEmpty ? summary.first : <String, dynamic>{};
+    final firstSummary = summary.isNotEmpty
+        ? summary.first
+        : <String, dynamic>{};
 
     final rawDenomination = _firstClean([
       ResponseParser.getValue(json, ['final_denomination']),
@@ -108,12 +104,15 @@ class FinalResultModel {
     final rawCountry = _firstClean([
       ResponseParser.getValue(json, ['quoc_gia']),
       ResponseParser.getValue(json, ['country']),
+      ResponseParser.getValue(json, ['final_country']),
       ResponseParser.getValue(firstSummary, ['country']),
       ResponseParser.getValue(firstSummary, ['quoc_gia']),
     ]);
 
     final rawCurrency = _firstClean([
       ResponseParser.getValue(json, ['currency']),
+      ResponseParser.getValue(json, ['currency_code']),
+      ResponseParser.getValue(json, ['ma_tien_te']),
       ResponseParser.getValue(json, ['loai_tien']),
       ResponseParser.getValue(firstSummary, ['currency']),
       ResponseParser.getValue(firstSummary, ['loai_tien']),
@@ -157,15 +156,17 @@ class FinalResultModel {
       ], fallback: '0'),
     );
 
-    final displayDenomination =
-    rawDenomination.isEmpty ? 'Unknown' : rawDenomination;
+    final displayDenomination = rawDenomination.isEmpty
+        ? 'Unknown'
+        : rawDenomination;
     final displayCountry = rawCountry.isEmpty ? 'Unknown' : rawCountry;
     final displayCurrency = rawCurrency.isEmpty
         ? _currencyFromDenomination(displayDenomination)
         : rawCurrency;
 
-    final normalizedCurrency =
-    displayCurrency.isEmpty ? 'Unknown' : displayCurrency;
+    final normalizedCurrency = displayCurrency.isEmpty
+        ? 'Unknown'
+        : displayCurrency;
 
     final bool multiBanknote = totalObjects > 1 || summary.length > 1;
     final String consensusText = multiBanknote
@@ -176,13 +177,23 @@ class FinalResultModel {
       country: displayCountry,
       denomination: displayDenomination,
       currency: normalizedCurrency,
+      confidence: _asDouble(
+        _firstClean([
+          ResponseParser.getValue(json, ['confidence']),
+          ResponseParser.getValue(json, ['do_tin_cay']),
+          ResponseParser.getValue(firstSummary, ['confidence']),
+          ResponseParser.getValue(firstSummary, ['do_tin_cay']),
+        ], fallback: '0'),
+      ),
       status: status,
       method: _firstClean([
         ResponseParser.getValue(json, ['method']),
         ResponseParser.getValue(json, ['phuong_phap']),
       ]),
       matchedAgents: consensusText,
-      matchedAgentsCount: matched == 0 ? _matchedFromVotes(validVotes) : matched,
+      matchedAgentsCount: matched == 0
+          ? _matchedFromVotes(validVotes)
+          : matched,
       totalAgents: 3,
       decisionReason: _firstClean([
         ResponseParser.getValue(json, ['quan_diem_trong_tai']),
@@ -200,11 +211,10 @@ class FinalResultModel {
         ResponseParser.getValue(json, ['origin']),
         displayCountry,
       ]),
-      requireRerun: ResponseParser.getValue(
-        json,
-        ['require_rerun'],
-        defaultValue: false,
-      ) ==
+      requireRerun:
+          ResponseParser.getValue(json, [
+            'require_rerun',
+          ], defaultValue: false) ==
           true,
       detectedCount: detectedCount,
       resolvedObjects: resolvedObjects,
@@ -250,7 +260,9 @@ class FinalResultModel {
       return cleanDenomination;
     }
 
-    if (RegExp('\\b$cleanCurrency\\b').hasMatch(cleanDenomination.toUpperCase())) {
+    if (RegExp(
+      '\\b$cleanCurrency\\b',
+    ).hasMatch(cleanDenomination.toUpperCase())) {
       return cleanDenomination;
     }
 
@@ -298,6 +310,12 @@ class FinalResultModel {
     if (value is int) return value;
     if (value is double) return value.round();
     return int.tryParse(value.toString()) ?? 0;
+  }
+
+  static double _asDouble(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString().replaceAll('%', '').trim()) ?? 0;
   }
 
   static int _matchedFromVotes(List<Map<String, dynamic>> votes) {

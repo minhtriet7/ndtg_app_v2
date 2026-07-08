@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../features/auth/controllers/auth_controller.dart';
 import '../../../routes/route_names.dart';
 
@@ -13,7 +14,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _fade;
   late final Animation<double> _scale;
@@ -26,9 +28,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       duration: const Duration(milliseconds: 850),
     )..forward();
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
-    _scale = Tween<double>(begin: 0.94, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
+    _scale = Tween<double>(
+      begin: 0.94,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
   }
@@ -49,7 +52,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     if (!mounted) return;
     Navigator.of(context).pushNamedAndRemoveUntil(
       auth.isAuthenticated ? RouteNames.main : RouteNames.login,
-          (route) => false,
+      (route) => false,
     );
   }
 
@@ -64,23 +67,25 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         decoration: BoxDecoration(
           gradient: isDark
               ? AppColors.darkGradient
-              : const LinearGradient(
-            colors: [Color(0xFFF8FBFF), Color(0xFFEAFBF8), Color(0xFFF8FBFF)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+              : AppColors.lightBrandGradient,
         ),
         child: Stack(
           children: [
             Positioned(
               top: -90,
               right: -80,
-              child: _Glow(size: 230, color: AppColors.primaryTeal.withOpacity(isDark ? 0.18 : 0.16)),
+              child: _Glow(
+                size: 230,
+                color: AppColors.primaryTeal.withOpacity(isDark ? 0.18 : 0.16),
+              ),
             ),
             Positioned(
               bottom: -100,
               left: -80,
-              child: _Glow(size: 260, color: AppColors.info.withOpacity(isDark ? 0.12 : 0.10)),
+              child: _Glow(
+                size: 260,
+                color: AppColors.info.withOpacity(isDark ? 0.12 : 0.10),
+              ),
             ),
             SafeArea(
               child: Center(
@@ -101,7 +106,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                               borderRadius: BorderRadius.circular(34),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primaryTeal.withOpacity(isDark ? 0.20 : 0.28),
+                                  color: AppColors.primaryTeal.withOpacity(
+                                    isDark ? 0.20 : 0.28,
+                                  ),
                                   blurRadius: 34,
                                   offset: const Offset(0, 18),
                                 ),
@@ -115,29 +122,44 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                           ),
                           const SizedBox(height: 26),
                           Text(
-                            'BanknoteAI',
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -1,
-                              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                            ),
+                            context.tr('appName'),
+                            style: Theme.of(context).textTheme.headlineMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -1,
+                                  color: isDark
+                                      ? AppColors.textPrimaryDark
+                                      : AppColors.textPrimaryLight,
+                                ),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Multi-Agent Banknote Recognition',
+                            context.tr('splashTagline'),
                             textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                            ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark
+                                      ? AppColors.textSecondaryDark
+                                      : AppColors.textSecondaryLight,
+                                ),
                           ),
                           const SizedBox(height: 28),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: AppSizes.sm),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSizes.md,
+                              vertical: AppSizes.sm,
+                            ),
                             decoration: BoxDecoration(
-                              color: isDark ? AppColors.cardDark.withOpacity(0.72) : Colors.white.withOpacity(0.82),
+                              color: isDark
+                                  ? AppColors.cardDark.withOpacity(0.72)
+                                  : Colors.white.withOpacity(0.82),
                               borderRadius: BorderRadius.circular(999),
-                              border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.borderDark
+                                    : AppColors.borderLight,
+                              ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -148,14 +170,17 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2.2,
                                     color: AppColors.primaryTeal,
-                                    backgroundColor: AppColors.primaryTeal.withOpacity(0.12),
+                                    backgroundColor: AppColors.primaryTeal
+                                        .withOpacity(0.12),
                                   ),
                                 ),
                                 const SizedBox(width: AppSizes.sm),
                                 Text(
-                                  'Preparing secure workspace',
+                                  context.tr('preparingWorkspace'),
                                   style: TextStyle(
-                                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                    color: isDark
+                                        ? AppColors.textSecondaryDark
+                                        : AppColors.textSecondaryLight,
                                     fontWeight: FontWeight.w800,
                                     fontSize: 12,
                                   ),

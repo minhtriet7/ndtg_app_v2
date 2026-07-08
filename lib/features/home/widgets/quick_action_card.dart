@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../routes/route_names.dart';
 import '../../auth/controllers/auth_controller.dart';
@@ -19,39 +20,47 @@ class QuickActionGrid extends StatelessWidget {
     final actions = <QuickActionCard>[
       QuickActionCard(
         icon: Icons.document_scanner_rounded,
-        title: 'Start Scan',
-        subtitle: 'Multi-agent analysis',
+        title: context.tr('startScan'),
+        subtitle: context.tr('multiAgentAnalysis'),
         color: AppColors.primaryTeal,
         onTap: () => context.read<MainTabController>().goScan(),
       ),
       QuickActionCard(
         icon: Icons.history_rounded,
-        title: 'History',
-        subtitle: 'Previous results',
-        color: AppColors.info,
+        title: context.tr('history'),
+        subtitle: context.tr('previousResults'),
+        color: AppColors.secondaryBlue,
         onTap: () => context.read<MainTabController>().goHistory(),
       ),
       QuickActionCard(
         icon: Icons.public_rounded,
-        title: 'Directory',
-        subtitle: 'SEA currencies',
+        title: context.tr('navigationDirectory'),
+        subtitle: context.tr('seaCurrencies'),
         color: AppColors.violet,
         onTap: () => context.read<MainTabController>().goCurrency(),
       ),
       QuickActionCard(
-        icon: Icons.toll_rounded,
-        title: 'Pricing',
-        subtitle: 'Manage tokens',
+        icon: Icons.currency_exchange_rounded,
+        title: context.tr('currency'),
+        subtitle: context.tr('convertCurrencies'),
+        color: AppColors.info,
+        onTap: () => Navigator.of(context).pushNamed(RouteNames.currency),
+      ),
+      QuickActionCard(
+        icon: Icons.credit_card_rounded,
+        title: context.tr('payment'),
+        subtitle: context.tr('manageTokens'),
         color: AppColors.warning,
         onTap: () => Navigator.of(context).pushNamed(RouteNames.pricing),
       ),
       if (isAdmin)
         QuickActionCard(
           icon: Icons.admin_panel_settings_rounded,
-          title: 'Admin Lite',
-          subtitle: 'System dashboard',
+          title: context.tr('adminLite'),
+          subtitle: context.tr('systemDashboard'),
           color: AppColors.danger,
-          onTap: () => Navigator.of(context).pushNamed(RouteNames.adminDashboard),
+          onTap: () =>
+              Navigator.of(context).pushNamed(RouteNames.adminDashboard),
         ),
     ];
 
@@ -59,7 +68,7 @@ class QuickActionGrid extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Quick Actions',
+          context.tr('quickActions'),
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w900,
             letterSpacing: -0.4,
@@ -72,7 +81,7 @@ class QuickActionGrid extends StatelessWidget {
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 1.22,
+            childAspectRatio: 1.35, // Refined proportion for bento style
             crossAxisSpacing: AppSizes.md,
             mainAxisSpacing: AppSizes.md,
           ),
@@ -105,59 +114,48 @@ class QuickActionCard extends StatelessWidget {
 
     return AppCard(
       onTap: onTap,
+      glowColor: color, // Set glow color in premium style
       padding: const EdgeInsets.all(AppSizes.md),
       backgroundColor: isDark ? AppColors.cardDark : Colors.white,
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Positioned(
-            right: -18,
-            top: -18,
-            child: Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: color.withOpacity(isDark ? 0.14 : 0.10),
-              ),
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: color.withOpacity(isDark ? 0.16 : 0.08),
+              borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+              border: Border.all(color: color.withOpacity(0.18)),
+            ),
+            child: Icon(icon, color: color, size: 19),
+          ),
+          const Spacer(),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight,
+              fontSize: 14.5,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.2,
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(isDark ? 0.22 : 0.12),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                  border: Border.all(color: color.withOpacity(0.12)),
-                ),
-                child: Icon(icon, color: color, size: 22),
-              ),
-              const Spacer(),
-              Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.2,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+          const SizedBox(height: 3),
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: isDark
+                  ? AppColors.textMutedDark
+                  : AppColors.textMutedLight,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

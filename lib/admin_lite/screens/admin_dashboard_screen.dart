@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../core/utils/date_formatter.dart';
 import '../../core/utils/money_formatter.dart';
 import '../../core/widgets/app_badge.dart';
@@ -36,10 +37,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Lite'),
+        title: Text(context.tr('adminLite')),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: context.tr('refresh'),
             icon: const Icon(Icons.refresh_rounded),
             onPressed: controller.loadDashboard,
           ),
@@ -92,9 +93,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           children: [
             Expanded(
               child: _MetricCard(
-                title: 'Users',
+                title: context.tr('users'),
                 value: dashboard.totalUsers.toString(),
-                subtitle: '${dashboard.activeUsers} active',
+                subtitle: '${dashboard.activeUsers} ${context.tr('active')}',
                 icon: Icons.people_alt_outlined,
                 color: AppColors.info,
               ),
@@ -102,9 +103,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             const SizedBox(width: AppSizes.md),
             Expanded(
               child: _MetricCard(
-                title: 'Scans',
+                title: context.tr('scans'),
                 value: dashboard.totalScans.toString(),
-                subtitle: '${dashboard.completedScans} completed',
+                subtitle:
+                    '${dashboard.completedScans} ${context.tr('completed').toLowerCase()}',
                 icon: Icons.document_scanner_outlined,
                 color: AppColors.primaryTeal,
               ),
@@ -116,9 +118,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           children: [
             Expanded(
               child: _MetricCard(
-                title: 'Pending Pay',
+                title: context.tr('pendingPayments'),
                 value: pendingPayments.toString(),
-                subtitle: 'real API list',
+                subtitle: context.tr('backendData'),
                 icon: Icons.pending_actions_outlined,
                 color: AppColors.warning,
               ),
@@ -126,9 +128,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             const SizedBox(width: AppSizes.md),
             Expanded(
               child: _MetricCard(
-                title: 'Feedback',
+                title: context.tr('feedback'),
                 value: pendingFeedbacks.toString(),
-                subtitle: 'unresolved',
+                subtitle: context.tr('unresolved'),
                 icon: Icons.forum_outlined,
                 color: AppColors.danger,
               ),
@@ -139,8 +141,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         _RevenueCard(amount: dashboard.totalRevenue),
         const SizedBox(height: AppSizes.xl),
         _AdminActionTile(
-          title: 'Pending Transactions',
-          subtitle: 'Review manual payments and token top-up invoices.',
+          title: context.tr('pendingTransactions'),
+          subtitle: context.tr('pendingTransactionsDesc'),
           icon: Icons.receipt_long_outlined,
           color: AppColors.warning,
           count: pendingPayments,
@@ -152,8 +154,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         ),
         const SizedBox(height: AppSizes.md),
         _AdminActionTile(
-          title: 'Pending Feedback',
-          subtitle: 'Review user reports, suggestions, and support requests.',
+          title: context.tr('pendingFeedback'),
+          subtitle: context.tr('pendingFeedbackDesc'),
           icon: Icons.feedback_outlined,
           color: AppColors.info,
           count: pendingFeedbacks,
@@ -165,15 +167,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         ),
         const SizedBox(height: AppSizes.md),
         _AdminActionTile(
-          title: 'System Health',
-          subtitle: 'Check backend, database, and AI pipeline status.',
+          title: context.tr('systemHealth'),
+          subtitle: context.tr('systemHealthDesc'),
           icon: Icons.monitor_heart_outlined,
           color: AppColors.success,
           count: null,
           onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => const AdminSystemHealthScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const AdminSystemHealthScreen()),
           ),
         ),
       ],
@@ -247,7 +247,7 @@ class _AdminHero extends StatelessWidget {
               if (controller.lastLoadedAt != null)
                 _WhiteStatusChip(
                   text:
-                  'Updated ${DateFormatter.formatDateTime(controller.lastLoadedAt!.toIso8601String())}',
+                      'Updated ${DateFormatter.formatDateTime(controller.lastLoadedAt!.toIso8601String())}',
                 ),
             ],
           ),
@@ -323,7 +323,9 @@ class _MetricCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w900,
-              color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+              color: isDark
+                  ? AppColors.textMutedDark
+                  : AppColors.textMutedLight,
               letterSpacing: 0.7,
             ),
           ),
@@ -343,8 +345,9 @@ class _MetricCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color:
-              isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
             ),
           ),
         ],
@@ -387,8 +390,9 @@ class _RevenueCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w900,
-                    color:
-                    isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+                    color: isDark
+                        ? AppColors.textMutedDark
+                        : AppColors.textMutedLight,
                   ),
                 ),
                 const SizedBox(height: 4),

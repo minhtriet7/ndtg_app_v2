@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../constants/storage_keys.dart';
 import '../storage/local_storage.dart';
 
 class ThemeController extends ChangeNotifier {
@@ -11,9 +13,18 @@ class ThemeController extends ChangeNotifier {
   }
 
   void _loadTheme() {
-    final isDark = LocalStorage.instance.getBool('is_dark_mode');
-    if (isDark != null) {
-      _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    final savedMode = LocalStorage.instance.getString(StorageKeys.themeMode);
+    if (savedMode == 'dark') {
+      _themeMode = ThemeMode.dark;
+    } else if (savedMode == 'light') {
+      _themeMode = ThemeMode.light;
+    } else if (savedMode == 'system') {
+      _themeMode = ThemeMode.system;
+    } else {
+      final legacyDark = LocalStorage.instance.getBool('is_dark_mode');
+      if (legacyDark != null) {
+        _themeMode = legacyDark ? ThemeMode.dark : ThemeMode.light;
+      }
     }
   }
 
@@ -25,9 +36,14 @@ class ThemeController extends ChangeNotifier {
 
   Future<void> setThemeMode(ThemeMode mode) async {
     _themeMode = mode;
-    if (mode != ThemeMode.system) {
-      await LocalStorage.instance.saveBool('is_dark_mode', mode == ThemeMode.dark);
-    }
+    await LocalStorage.instance.saveString(
+      StorageKeys.themeMode,
+      switch (mode) {
+        ThemeMode.dark => 'dark',
+        ThemeMode.light => 'light',
+        ThemeMode.system => 'system',
+      },
+    );
     notifyListeners();
   }
 

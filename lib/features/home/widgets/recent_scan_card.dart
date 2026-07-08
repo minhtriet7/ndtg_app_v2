@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/network/response_parser.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/app_badge.dart';
@@ -20,9 +21,9 @@ class RecentScansList extends StatelessWidget {
     final scans = context.watch<HomeController>().recentScans;
 
     if (scans.isEmpty) {
-      return const EmptyState(
-        title: 'No recent scans',
-        message: 'Your analyzed banknotes will appear here after the first scan.',
+      return EmptyState(
+        title: context.tr('noRecentScans'),
+        message: context.tr('noRecentScansDesc'),
         icon: Icons.receipt_long_rounded,
       );
     }
@@ -50,64 +51,61 @@ class RecentScansList extends StatelessWidget {
 class RecentScanCard extends StatelessWidget {
   final Map<String, dynamic> scan;
 
-  const RecentScanCard({
-    super.key,
-    required this.scan,
-  });
+  const RecentScanCard({super.key, required this.scan});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final imageUrl = _asString(ResponseParser.getValue(
-      scan,
-      ['uploaded_image_url', 'image_url', 'thumbnail_url', 'image'],
-      defaultValue: '',
-    ));
+    final imageUrl = _asString(
+      ResponseParser.getValue(scan, [
+        'uploaded_image_url',
+        'image_url',
+        'thumbnail_url',
+        'image',
+      ], defaultValue: ''),
+    );
 
-    final denomination = ResponseParser.getValue(
-      scan,
-      [
-        'final_result.final_denomination',
-        'final_result.menh_gia',
-        'final_result.denomination',
-        'denomination',
-      ],
-      defaultValue: '',
-    ).toString();
+    final denomination = ResponseParser.getValue(scan, [
+      'final_result.final_denomination',
+      'final_result.menh_gia',
+      'final_result.denomination',
+      'denomination',
+    ], defaultValue: '').toString();
 
-    final currency = ResponseParser.getValue(
-      scan,
-      [
-        'final_result.currency',
-        'final_result.loai_tien',
-        'currency',
-        'target_currency',
-      ],
-      defaultValue: '',
-    ).toString();
+    final currency = ResponseParser.getValue(scan, [
+      'final_result.currency',
+      'final_result.loai_tien',
+      'currency',
+      'target_currency',
+    ], defaultValue: '').toString();
 
-    final country = ResponseParser.getValue(
-      scan,
-      ['final_result.country', 'final_result.quoc_gia', 'country'],
-      defaultValue: '',
-    ).toString();
+    final country = ResponseParser.getValue(scan, [
+      'final_result.country',
+      'final_result.quoc_gia',
+      'country',
+    ], defaultValue: '').toString();
 
-    final createdAt = ResponseParser.getValue(
-      scan,
-      ['created_at', 'createdAt', 'time', 'updated_at'],
-      defaultValue: '',
-    ).toString();
+    final createdAt = ResponseParser.getValue(scan, [
+      'created_at',
+      'createdAt',
+      'time',
+      'updated_at',
+    ], defaultValue: '').toString();
 
-    final status = ResponseParser.getValue(
-      scan,
-      ['status', 'state'],
-      defaultValue: 'completed',
-    ).toString();
+    final status = ResponseParser.getValue(scan, [
+      'status',
+      'state',
+    ], defaultValue: 'completed').toString();
 
     final badgeStatus = _badgeStatus(status);
-    final title = [denomination, currency].where((e) => e.trim().isNotEmpty).join(' ');
-    final displayTitle = title.trim().isEmpty ? 'Unknown banknote' : title;
+    final title = [
+      denomination,
+      currency,
+    ].where((e) => e.trim().isNotEmpty).join(' ');
+    final displayTitle = title.trim().isEmpty
+        ? context.tr('unknownBanknote')
+        : title;
 
     return InkWell(
       onTap: () => context.read<MainTabController>().goHistory(),
@@ -133,18 +131,24 @@ class RecentScanCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    country.isEmpty ? 'Country not confirmed' : country,
+                    country.isEmpty
+                        ? context.tr('countryNotConfirmed')
+                        : country,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondaryLight,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -153,7 +157,9 @@ class RecentScanCard extends StatelessWidget {
                   Text(
                     DateFormatter.formatTimeAgo(createdAt),
                     style: TextStyle(
-                      color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+                      color: isDark
+                          ? AppColors.textMutedDark
+                          : AppColors.textMutedLight,
                       fontSize: 12,
                     ),
                   ),
@@ -161,7 +167,7 @@ class RecentScanCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            AppBadge(text: _statusLabel(status), status: badgeStatus),
+            AppBadge(text: context.trStatus(status), status: badgeStatus),
           ],
         ),
       ),
@@ -170,21 +176,18 @@ class RecentScanCard extends StatelessWidget {
 
   String _asString(dynamic value) => value == null ? '' : value.toString();
 
-  String _statusLabel(String value) {
-    final normalized = value.toLowerCase();
-    if (['completed', 'done', 'success'].contains(normalized)) return 'Done';
-    if (['failed', 'error'].contains(normalized)) return 'Failed';
-    if (['needs_review', 'review'].contains(normalized)) return 'Review';
-    return 'Pending';
-  }
-
   BadgeStatus _badgeStatus(String value) {
     final normalized = value.toLowerCase();
     if (['completed', 'done', 'success'].contains(normalized)) {
       return BadgeStatus.success;
     }
     if (['failed', 'error'].contains(normalized)) return BadgeStatus.error;
-    if (['needs_review', 'review', 'pending', 'processing'].contains(normalized)) {
+    if ([
+      'needs_review',
+      'review',
+      'pending',
+      'processing',
+    ].contains(normalized)) {
       return BadgeStatus.warning;
     }
     return BadgeStatus.neutral;

@@ -3,11 +3,12 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
+import '../../../routes/route_names.dart';
 import '../controllers/recognition_controller.dart';
 import '../widgets/selected_image_preview.dart';
-import 'processing_screen.dart';
 
 class ImagePreviewScreen extends StatelessWidget {
   const ImagePreviewScreen({super.key});
@@ -19,38 +20,36 @@ class ImagePreviewScreen extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Confirm Image'),
-      ),
+      appBar: AppBar(title: Text(context.tr('confirmImage'))),
       body: image == null
           ? const _NoImageState()
           : SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSizes.lg,
-                  AppSizes.lg,
-                  AppSizes.lg,
-                  AppSizes.md,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _PreviewHero(isDark: isDark),
-                    const SizedBox(height: AppSizes.lg),
-                    SelectedImagePreview(image: image),
-                    const SizedBox(height: AppSizes.lg),
-                    const _ScanNoticeCard(),
-                  ],
-                ),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSizes.lg,
+                        AppSizes.lg,
+                        AppSizes.lg,
+                        AppSizes.md,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _PreviewHero(isDark: isDark),
+                          const SizedBox(height: AppSizes.lg),
+                          SelectedImagePreview(image: image),
+                          const SizedBox(height: AppSizes.lg),
+                          const _ScanNoticeCard(),
+                        ],
+                      ),
+                    ),
+                  ),
+                  _BottomActionBar(isDark: isDark),
+                ],
               ),
             ),
-            _BottomActionBar(isDark: isDark),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -78,27 +77,31 @@ class _PreviewHero extends StatelessWidget {
             ),
           ],
         ),
-        child: const Row(
+        child: Row(
           children: [
-            Icon(Icons.document_scanner_rounded, color: Colors.white, size: 42),
-            SizedBox(width: AppSizes.md),
+            const Icon(
+              Icons.document_scanner_rounded,
+              color: Colors.white,
+              size: 42,
+            ),
+            const SizedBox(width: AppSizes.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Ready for Analysis',
-                    style: TextStyle(
+                    context.tr('readyForAnalysis'),
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.5,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
-                    'Review the uploaded banknote before running the multi-agent AI pipeline.',
-                    style: TextStyle(
+                    context.tr('previewDescription'),
+                    style: const TextStyle(
                       color: Colors.white70,
                       height: 1.35,
                       fontWeight: FontWeight.w600,
@@ -136,13 +139,10 @@ class _ScanNoticeCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSizes.md),
-          const Expanded(
+          Expanded(
             child: Text(
-              'Starting a scan consumes 1 system token. Make sure the image is sharp, well-lit, and the full banknote is visible.',
-              style: TextStyle(
-                height: 1.45,
-                fontWeight: FontWeight.w600,
-              ),
+              context.tr('scanTokenNotice'),
+              style: const TextStyle(height: 1.45, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -184,7 +184,7 @@ class _BottomActionBar extends StatelessWidget {
         children: [
           Expanded(
             child: AppButton(
-              text: 'Change',
+              text: context.tr('changeImage'),
               type: AppButtonType.outline,
               icon: Icons.refresh_rounded,
               onPressed: () => Navigator.of(context).pop(),
@@ -194,14 +194,10 @@ class _BottomActionBar extends StatelessWidget {
           Expanded(
             flex: 2,
             child: AppButton(
-              text: 'Analyze Banknote',
-              icon: Icons.auto_awesome_rounded,
+              text: context.tr('analyzeBanknote'),
+              icon: Icons.image_search_rounded,
               onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const ProcessingScreen(),
-                  ),
-                );
+                Navigator.of(context).pushNamed(RouteNames.processing);
               },
             ),
           ),
@@ -238,20 +234,20 @@ class _NoImageState extends StatelessWidget {
               ),
               const SizedBox(height: AppSizes.md),
               Text(
-                'No selected image found',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+                context.tr('noSelectedImage'),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: AppSizes.sm),
               Text(
-                'Please choose a banknote image again before analysis.',
+                context.tr('chooseImageAgain'),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: AppSizes.lg),
               AppButton(
-                text: 'Back to Upload',
+                text: context.tr('backToUpload'),
                 isFullWidth: false,
                 type: AppButtonType.outline,
                 onPressed: () => Navigator.of(context).pop(),

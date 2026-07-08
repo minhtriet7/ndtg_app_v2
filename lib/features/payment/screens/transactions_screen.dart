@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_skeleton.dart';
@@ -29,7 +30,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final controller = context.watch<PaymentController>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Transactions')),
+      appBar: AppBar(title: Text(context.tr('transactions'))),
       body: RefreshIndicator(
         color: AppColors.primaryTeal,
         onRefresh: () => controller.fetchTransactions(),
@@ -44,13 +45,16 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     }
 
     if (controller.error != null && controller.transactions.isEmpty) {
-      return ErrorState(message: controller.error!, onRetry: () => controller.fetchTransactions());
+      return ErrorState(
+        message: context.tr(controller.error!),
+        onRetry: () => controller.fetchTransactions(),
+      );
     }
 
     if (controller.transactions.isEmpty) {
-      return const EmptyState(
-        title: 'No transactions yet',
-        message: 'Your top-up and payment history will appear here.',
+      return EmptyState(
+        title: context.tr('noTransactionsYet'),
+        message: context.tr('noTransactionsDesc'),
         icon: Icons.receipt_long_outlined,
       );
     }
@@ -59,7 +63,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       padding: const EdgeInsets.all(AppSizes.lg),
       itemCount: controller.transactions.length,
       separatorBuilder: (_, __) => const SizedBox(height: AppSizes.md),
-      itemBuilder: (context, index) => TransactionItemCard(transaction: controller.transactions[index]),
+      itemBuilder: (context, index) =>
+          TransactionItemCard(transaction: controller.transactions[index]),
     );
   }
 }

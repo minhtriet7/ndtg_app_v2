@@ -6,8 +6,70 @@ import '../models/payment_status_model.dart';
 import '../models/token_package_model.dart';
 import '../models/transaction_model.dart';
 
+class PaymentGatewayAvailability {
+  final List<String> gateways;
+  final bool usedFallback;
+
+  const PaymentGatewayAvailability({
+    required this.gateways,
+    required this.usedFallback,
+  });
+}
+
 class PaymentService {
   final DioClient _client = DioClient();
+
+  Future<PaymentGatewayAvailability> getGatewayAvailability() async {
+    try {
+      final response = await _client.get(ApiEndpoints.paymentGatewaySettings);
+      final root = ResponseParser.parseMap(response);
+      final data = ResponseParser.parseMap(root['data'] ?? root);
+      final paymentEnabled = data['feature_payment_enabled'] != false;
+      final rawGateways = data['enabled_payment_gateways'];
+      final vnpayEnabled = data['vnpay_enabled'] == true;
+
+      if (!paymentEnabled) {
+        return const PaymentGatewayAvailability(
+          gateways: [],
+          usedFallback: false,
+        );
+      }
+
+      if (rawGateways is List) {
+        final gateways = rawGateways
+            .map((item) => item.toString().trim().toLowerCase())
+            .map((item) {
+              if (item == 'vietqr' || item == 'qr') return 'bank_transfer';
+              return item;
+            })
+            .where(
+              (item) =>
+                  item == 'bank_transfer' || (item == 'vnpay' && vnpayEnabled),
+            )
+            .toSet()
+            .toList();
+
+        return PaymentGatewayAvailability(
+          gateways: gateways,
+          usedFallback: false,
+        );
+      }
+
+      // A successful settings response without an enabled list means that the
+      // server did not publish a usable payment method. Do not invent one.
+      return const PaymentGatewayAvailability(
+        gateways: [],
+        usedFallback: false,
+      );
+    } catch (_) {
+      // Bank transfer is the backend's safe public fallback when settings
+      // cannot be loaded because of a temporary network/API problem.
+      return const PaymentGatewayAvailability(
+        gateways: ['bank_transfer'],
+        usedFallback: true,
+      );
+    }
+  }
 
   Future<List<TokenPackageModel>> getPackages() async {
     final response = await _client.get(ApiEndpoints.tokenPackages);
@@ -20,12 +82,18 @@ class PaymentService {
         .toList();
   }
 
-  Future<PaymentModel> createPayment(String packageId, {String gateway = 'sepay'}) async {
+  Future<PaymentModel> createPayment(
+    String packageId, {
+    String gateway = 'bank_transfer',
+  }) async {
+    final normalizedGateway = gateway.trim().toLowerCase();
     final response = await _client.post(
       ApiEndpoints.paymentCreate,
       data: {
         'package_id': packageId,
-        'gateway': gateway,
+        'gateway': normalizedGateway.isEmpty
+            ? 'bank_transfer'
+            : normalizedGateway,
       },
     );
 

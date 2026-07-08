@@ -84,7 +84,9 @@ class PaymentModel {
   /// accidentally encode the URL/text into a broken payment QR.
   String get effectiveQrData {
     if (qrData.trim().isNotEmpty) return qrData.trim();
-    if (qrCode.trim().isNotEmpty && !_looksLikeUrl(qrCode)) return qrCode.trim();
+    if (qrCode.trim().isNotEmpty && !_looksLikeUrl(qrCode)) {
+      return qrCode.trim();
+    }
     return '';
   }
 
@@ -92,66 +94,109 @@ class PaymentModel {
   bool get hasQrPayload => effectiveQrData.isNotEmpty;
 
   factory PaymentModel.fromJson(dynamic raw) {
-    final json = raw is Map<String, dynamic> ? raw : Map<String, dynamic>.from(raw as Map);
+    final root = raw is Map<String, dynamic>
+        ? raw
+        : Map<String, dynamic>.from(raw as Map);
+    final rawData = root['data'];
+    final data = rawData is Map
+        ? Map<String, dynamic>.from(rawData)
+        : Map<String, dynamic>.from(root);
+    final rawInvoice = data['invoice'];
+    final invoice = rawInvoice is Map
+        ? Map<String, dynamic>.from(rawInvoice)
+        : const <String, dynamic>{};
+    final json = <String, dynamic>{...invoice, ...data};
 
     return PaymentModel(
-      id: JsonHelper.safeString(ResponseParser.getValue(json, ['id', '_id', 'payment_id'])),
-      hexId: JsonHelper.safeString(ResponseParser.getValue(json, ['hex_id', 'hexId', 'invoice_code'])),
-      status: JsonHelper.safeString(ResponseParser.getValue(json, ['status']), fallback: 'pending').toLowerCase(),
+      id: JsonHelper.safeString(
+        ResponseParser.getValue(json, [
+          'id',
+          '_id',
+          'payment_id',
+          'transaction_id',
+        ]),
+      ),
+      hexId: JsonHelper.safeString(
+        ResponseParser.getValue(json, ['hex_id', 'hexId', 'invoice_code']),
+      ),
+      status: JsonHelper.safeString(
+        ResponseParser.getValue(json, ['status']),
+        fallback: 'pending',
+      ).toLowerCase(),
 
       // Keep compatibility with existing backend fields.
       qrCode: JsonHelper.safeString(
-        ResponseParser.getValue(
-          json,
-          [
-            'qr_code',
-            'qrCode',
-            'qr_url',
-            'qrUrl',
-            'vietqr_url',
-            'vietQrUrl',
-            'vietqr_image_url',
-            'qr_image_url',
-            'sepay_qr_url',
-          ],
-        ),
+        ResponseParser.getValue(json, [
+          'qr_code',
+          'qrCode',
+          'qr_url',
+          'qrUrl',
+          'vietqr_url',
+          'vietQrUrl',
+          'vietqr_image_url',
+          'qr_image_url',
+          'sepay_qr_url',
+        ]),
       ),
       qrData: JsonHelper.safeString(
-        ResponseParser.getValue(
-          json,
-          [
-            'qr_data',
-            'qrData',
-            'qr_content',
-            'qrContent',
-            'qr_payload',
-            'qrPayload',
-            'vietqr_payload',
-            'emv_qr',
-            'emvQr',
-          ],
-        ),
+        ResponseParser.getValue(json, [
+          'qr_data',
+          'qrData',
+          'qr_content',
+          'qrContent',
+          'qr_payload',
+          'qrPayload',
+          'vietqr_payload',
+          'emv_qr',
+          'emvQr',
+        ]),
       ),
       transferContent: JsonHelper.safeString(
-        ResponseParser.getValue(json, ['transfer_content', 'content', 'description', 'bank_content']),
-        fallback: 'BANKNOTEAI',
+        ResponseParser.getValue(json, [
+          'transfer_content',
+          'content',
+          'description',
+          'bank_content',
+        ]),
       ),
       bankName: JsonHelper.safeString(
-        ResponseParser.getValue(json, ['bank_name', 'bank_brand', 'bank']),
-        fallback: 'Bank transfer',
+        ResponseParser.getValue(json, [
+          'bank_name',
+          'bank_brand',
+          'bank',
+          'bank_id',
+        ]),
       ),
       accountNumber: JsonHelper.safeString(
-        ResponseParser.getValue(json, ['account_number', 'bank_account', 'receiver_account']),
+        ResponseParser.getValue(json, [
+          'account_number',
+          'bank_account_number',
+          'bank_account',
+          'receiver_account',
+        ]),
       ),
       accountName: JsonHelper.safeString(
         ResponseParser.getValue(json, ['account_name', 'receiver_name']),
       ),
       amount: JsonHelper.safeDouble(
-        ResponseParser.getValue(json, ['amount', 'amount_vnd', 'total_amount', 'price_vnd']),
+        ResponseParser.getValue(json, [
+          'amount',
+          'amount_vnd',
+          'total_amount',
+          'price_vnd',
+        ]),
       ),
-      tokens: JsonHelper.safeInt(ResponseParser.getValue(json, ['tokens', 'token_amount', 'tokens_added'])),
-      expiredAt: JsonHelper.safeString(ResponseParser.getValue(json, ['expired_at', 'expires_at'])),
-      raw: Map<String, dynamic>.from(json),
+      tokens: JsonHelper.safeInt(
+        ResponseParser.getValue(json, [
+          'tokens',
+          'token_amount',
+          'tokens_added',
+        ]),
+      ),
+      expiredAt: JsonHelper.safeString(
+        ResponseParser.getValue(json, ['expired_at', 'expires_at']),
+      ),
+      raw: json,
     );
   }
 }

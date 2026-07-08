@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/constants/app_colors.dart';
+import '../core/localization/app_localizations.dart';
 import '../features/auth/controllers/auth_controller.dart';
 import 'route_names.dart';
 
@@ -9,33 +10,27 @@ class RouteGuard extends StatelessWidget {
   final Widget child;
   final bool adminOnly;
 
-  const RouteGuard({
-    super.key,
-    required this.child,
-    this.adminOnly = false,
-  });
+  const RouteGuard({super.key, required this.child, this.adminOnly = false});
 
   bool _isAdmin(AuthController auth) {
     final role = (auth.currentUser?.role ?? '').toLowerCase().trim();
-    return role == 'admin' || role == 'superadmin';
+    return role == 'admin';
   }
 
   void _goToLogin(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!context.mounted) return;
 
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        RouteNames.login,
-            (route) => false,
-      );
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(RouteNames.login, (route) => false);
     });
   }
 
   void _goToMain(BuildContext context) {
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      RouteNames.main,
-          (route) => false,
-    );
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil(RouteNames.main, (route) => false);
   }
 
   @override
@@ -57,7 +52,7 @@ class RouteGuard extends StatelessWidget {
 
     if (adminOnly && !_isAdmin(auth)) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Access denied')),
+        appBar: AppBar(title: Text(context.tr('accessDenied'))),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -71,22 +66,22 @@ class RouteGuard extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Admin permission required',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
+                  context.tr('adminPermissionRequired'),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Your account does not have permission to access this area.',
+                  context.tr('adminPermissionDesc'),
                   style: Theme.of(context).textTheme.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
                 FilledButton(
                   onPressed: () => _goToMain(context),
-                  child: const Text('Back to app'),
+                  child: Text(context.tr('backToApp')),
                 ),
               ],
             ),

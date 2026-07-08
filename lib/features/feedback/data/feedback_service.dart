@@ -15,17 +15,17 @@ class FeedbackService {
   Future<FeedbackModel> createFeedback({
     required String message,
     required int rating,
-    String type = 'general',
-    String? recognitionResultId,
+    String feedbackType = 'general',
+    String? relatedResultId,
   }) async {
     final payload = <String, dynamic>{
       'message': message,
       'rating': rating,
-      'type': type,
+      'feedback_type': feedbackType,
     };
 
-    if (recognitionResultId != null && recognitionResultId.isNotEmpty) {
-      payload['recognition_result_id'] = recognitionResultId;
+    if (relatedResultId != null && relatedResultId.isNotEmpty) {
+      payload['related_result_id'] = relatedResultId;
     }
 
     final response = await _client.post(ApiEndpoints.feedback, data: payload);

@@ -26,32 +26,75 @@ class TransactionModel {
     required this.raw,
   });
 
-  bool get isSuccess => ['success', 'completed', 'paid'].contains(status.toLowerCase());
+  bool get isSuccess =>
+      ['success', 'completed', 'paid'].contains(status.toLowerCase());
   bool get isPending => status.toLowerCase() == 'pending';
-  bool get isFailed => ['failed', 'cancelled', 'canceled', 'expired'].contains(status.toLowerCase());
+  bool get isFailed => [
+    'failed',
+    'cancelled',
+    'canceled',
+    'expired',
+  ].contains(status.toLowerCase());
 
   factory TransactionModel.fromJson(dynamic raw) {
-    final json = raw is Map<String, dynamic> ? raw : Map<String, dynamic>.from(raw as Map);
+    final json = raw is Map<String, dynamic>
+        ? raw
+        : Map<String, dynamic>.from(raw as Map);
     return TransactionModel(
-      id: JsonHelper.safeString(ResponseParser.getValue(json, ['id', '_id', 'transaction_id', 'payment_id'])),
+      id: JsonHelper.safeString(
+        ResponseParser.getValue(json, [
+          'id',
+          '_id',
+          'transaction_id',
+          'payment_id',
+        ]),
+      ),
       transactionCode: JsonHelper.safeString(
-        ResponseParser.getValue(json, ['transaction_code', 'payment_code', 'checkout_code', 'code', 'hex_id']),
+        ResponseParser.getValue(json, [
+          'transaction_code',
+          'payment_code',
+          'checkout_code',
+          'code',
+          'hex_id',
+        ]),
         fallback: 'UNKNOWN',
       ),
       amount: JsonHelper.safeDouble(
-        ResponseParser.getValue(json, ['amount', 'amount_vnd', 'total_amount', 'price_vnd']),
+        ResponseParser.getValue(json, [
+          'amount',
+          'amount_vnd',
+          'total_amount',
+          'price_vnd',
+        ]),
       ),
       tokensAdded: JsonHelper.safeInt(
-        ResponseParser.getValue(json, ['tokens_added', 'tokens', 'token_amount']),
+        ResponseParser.getValue(json, [
+          'tokens_added',
+          'tokens',
+          'token_amount',
+        ]),
       ),
-      status: JsonHelper.safeString(ResponseParser.getValue(json, ['status']), fallback: 'pending').toLowerCase(),
+      status: JsonHelper.safeString(
+        ResponseParser.getValue(json, ['status']),
+        fallback: 'pending',
+      ).toLowerCase(),
       gateway: JsonHelper.safeString(
-        ResponseParser.getValue(json, ['gateway', 'provider', 'payment_gateway']),
-        fallback: 'sepay',
+        ResponseParser.getValue(json, [
+          'gateway',
+          'provider',
+          'payment_gateway',
+        ]),
+        fallback: 'bank_transfer',
       ),
-      createdAt: JsonHelper.safeString(ResponseParser.getValue(json, ['created_at', 'createdAt'])),
-      paidAt: JsonHelper.safeString(ResponseParser.getValue(json, ['paid_at', 'completed_at'])),
-      transferContent: JsonHelper.safeString(ResponseParser.getValue(json, ['transfer_content', 'content'])),
+      createdAt: JsonHelper.safeString(
+        ResponseParser.getValue(json, ['created_at', 'createdAt']),
+      ),
+      paidAt: JsonHelper.safeString(
+        ResponseParser.getValue(json, ['paid_at', 'completed_at']),
+      ),
+      transferContent: JsonHelper.safeString(
+        ResponseParser.getValue(json, ['transfer_content', 'content']),
+      ),
       raw: Map<String, dynamic>.from(json),
     );
   }

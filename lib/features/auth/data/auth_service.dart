@@ -31,9 +31,7 @@ class AuthService {
         data: request.toJson(),
       );
 
-      return AuthResponse.fromJson(
-        ResponseParser.parseMap(_unwrap(response)),
-      );
+      return AuthResponse.fromJson(ResponseParser.parseMap(_unwrap(response)));
     } on DioException catch (error) {
       final statusCode = error.response?.statusCode;
 
@@ -59,8 +57,13 @@ class AuthService {
       data: request.toJson(),
     );
 
-    return AuthResponse.fromJson(
-      ResponseParser.parseMap(_unwrap(response)),
+    return AuthResponse.fromJson(ResponseParser.parseMap(_unwrap(response)));
+  }
+
+  Future<void> forgotPassword(String email) async {
+    await _client.post(
+      ApiEndpoints.forgotPassword,
+      data: {'email': email.trim()},
     );
   }
 
@@ -92,15 +95,15 @@ class AuthService {
   String getGoogleLoginUrl() {
     final root = AppConfig.baseUrl.endsWith('/api/v1')
         ? AppConfig.baseUrl.substring(
-      0,
-      AppConfig.baseUrl.length - '/api/v1'.length,
-    )
+            0,
+            AppConfig.baseUrl.length - '/api/v1'.length,
+          )
         : AppConfig.baseUrl;
 
     return '$root/api/v1/auth/google/login?platform=mobile';
   }
 
-  Future<String> authenticateWithGoogle() async {
+  Future<AuthResponse> authenticateWithGoogle() async {
     final callbackUrl = await FlutterWebAuth2.authenticate(
       url: getGoogleLoginUrl(),
       callbackUrlScheme: 'banknoteai',
@@ -108,12 +111,17 @@ class AuthService {
 
     final uri = Uri.parse(callbackUrl);
     final token = uri.queryParameters['token'];
+    final refreshToken = uri.queryParameters['refresh_token'] ?? '';
 
     if (token == null || token.isEmpty) {
       final error = uri.queryParameters['error'] ?? 'Google login failed.';
       throw ApiException(message: error);
     }
 
-    return token;
+    return AuthResponse.fromJson({
+      'access_token': token,
+      'refresh_token': refreshToken,
+      'token_type': 'bearer',
+    });
   }
 }

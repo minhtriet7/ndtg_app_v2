@@ -13,10 +13,7 @@ class RecognitionStartResponse {
   final RecognitionTaskModel? task;
   final BanknoteResultModel? result;
 
-  const RecognitionStartResponse({
-    this.task,
-    this.result,
-  });
+  const RecognitionStartResponse({this.task, this.result});
 
   bool get isAsync => task != null;
   bool get isDirectResult => result != null;
@@ -29,10 +26,7 @@ class RecognitionService {
     final fileName = imageFile.path.split(Platform.pathSeparator).last;
 
     final formData = FormData.fromMap({
-      'file': await MultipartFile.fromFile(
-        imageFile.path,
-        filename: fileName,
-      ),
+      'file': await MultipartFile.fromFile(imageFile.path, filename: fileName),
     });
 
     Response response;
@@ -67,23 +61,30 @@ class RecognitionService {
       );
     }
 
-    final map = ResponseParser.parseMap(response);
-
-    final taskId = ResponseParser.getValue(map, ['task_id', 'job_id']);
+    final map = _payloadMap(response);
+    final taskMap = _nestedMap(map, 'task') ?? map;
+    final taskId = ResponseParser.getValue(taskMap, [
+      'task_id',
+      'id',
+      'job_id',
+    ]);
     if (taskId != null && taskId.toString().isNotEmpty) {
       return RecognitionStartResponse(
-        task: RecognitionTaskModel.fromJson(map),
+        task: RecognitionTaskModel.fromJson(taskMap),
       );
     }
 
     return RecognitionStartResponse(
-      result: BanknoteResultModel.fromJson(map),
+      result: BanknoteResultModel.fromJson(_nestedMap(map, 'result') ?? map),
     );
   }
 
   Future<RecognitionTaskModel> getTaskStatus(String taskId) async {
-    final response = await _client.get(ApiEndpoints.recognitionTaskStatus(taskId));
-    return RecognitionTaskModel.fromJson(response);
+    final response = await _client.get(
+      ApiEndpoints.recognitionTaskStatus(taskId),
+    );
+    final map = _payloadMap(response);
+    return RecognitionTaskModel.fromJson(_nestedMap(map, 'task') ?? map);
   }
 
   Future<BanknoteResultModel> getResultDetail(String id) async {
@@ -97,15 +98,28 @@ class RecognitionService {
   }) async {
     final response = await _client.get(
       ApiEndpoints.recognitionHistory,
-      queryParameters: {
-        'limit': limit,
-        'page': page,
-      },
+      queryParameters: {'limit': limit, 'page': page},
     );
 
-    return ResponseParser.parseList(response)
-        .map((item) => BanknoteResultModel.fromJson(item))
-        .toList();
+    return ResponseParser.parseList(
+      response,
+    ).map((item) => BanknoteResultModel.fromJson(item)).toList();
+  }
+
+  Map<String, dynamic> _payloadMap(dynamic response) {
+    final raw = ResponseParser.unwrap(response);
+    if (raw is! Map) return const {};
+
+    final map = Map<String, dynamic>.from(raw);
+    final data = map['data'];
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return map;
+  }
+
+  Map<String, dynamic>? _nestedMap(Map<String, dynamic> payload, String key) {
+    final value = payload[key];
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return null;
   }
 
   ApiException? _unwrapApiException(dynamic error) {

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 
 class SelectedImagePreview extends StatelessWidget {
   final File image;
@@ -44,12 +45,9 @@ class SelectedImagePreview extends StatelessWidget {
               minScale: 0.7,
               maxScale: 4,
               child: Container(
-                color: isDark ? AppColors.bgDark : const Color(0xFFF8FAFC),
+                color: AppColors.surfaceSubtle(context),
                 alignment: Alignment.center,
-                child: Image.file(
-                  image,
-                  fit: BoxFit.contain,
-                ),
+                child: Image.file(image, fit: BoxFit.contain),
               ),
             ),
           ),
@@ -80,7 +78,7 @@ class SelectedImagePreview extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'Pinch to zoom',
+                    context.tr('pinchToZoom'),
                     style: TextStyle(
                       color: isDark
                           ? AppColors.textSecondaryDark

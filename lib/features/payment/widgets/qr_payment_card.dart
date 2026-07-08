@@ -4,6 +4,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
@@ -12,13 +13,19 @@ import '../models/payment_model.dart';
 class QrPaymentCard extends StatelessWidget {
   final PaymentModel payment;
   final bool isPolling;
-  final VoidCallback onCancel;
+  final bool isCheckingStatus;
+  final String status;
+  final VoidCallback onCheckStatus;
+  final VoidCallback onBack;
 
   const QrPaymentCard({
     super.key,
     required this.payment,
     required this.isPolling,
-    required this.onCancel,
+    required this.isCheckingStatus,
+    required this.status,
+    required this.onCheckStatus,
+    required this.onBack,
   });
 
   void _copy(BuildContext context, String value, String label) {
@@ -27,7 +34,7 @@ class QrPaymentCard extends StatelessWidget {
     Clipboard.setData(ClipboardData(text: value));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$label copied.'),
+        content: Text('${context.tr(label)} ${context.tr('copied')}.'),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -50,20 +57,26 @@ class QrPaymentCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppSizes.radiusXxl),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primaryTeal.withOpacity(isDark ? 0.08 : 0.20),
+                  color: AppColors.primaryTeal.withOpacity(
+                    isDark ? 0.08 : 0.20,
+                  ),
                   blurRadius: 30,
                   offset: const Offset(0, 16),
                 ),
               ],
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.qr_code_2_rounded, color: Colors.white, size: 38),
-                SizedBox(height: AppSizes.md),
+                const Icon(
+                  Icons.qr_code_2_rounded,
+                  color: Colors.white,
+                  size: 38,
+                ),
+                const SizedBox(height: AppSizes.md),
                 Text(
-                  'Complete secure bank transfer',
-                  style: TextStyle(
+                  context.tr('completeBankTransfer'),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 24,
                     height: 1.1,
@@ -71,10 +84,10 @@ class QrPaymentCard extends StatelessWidget {
                     letterSpacing: -0.5,
                   ),
                 ),
-                SizedBox(height: AppSizes.sm),
+                const SizedBox(height: AppSizes.sm),
                 Text(
-                  'Scan the VietQR code and keep the transfer content unchanged for automatic confirmation.',
-                  style: TextStyle(
+                  context.tr('scanVietQrDesc'),
+                  style: const TextStyle(
                     color: Colors.white70,
                     height: 1.45,
                     fontWeight: FontWeight.w600,
@@ -90,6 +103,16 @@ class QrPaymentCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Center(
+                child: Text(
+                  context.tr('scanVietQr'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSizes.md),
               Center(
                 child: Container(
                   padding: const EdgeInsets.all(18),
@@ -110,70 +133,50 @@ class QrPaymentCard extends StatelessWidget {
               ),
               const SizedBox(height: AppSizes.lg),
               _InfoRow(
-                label: 'Amount',
+                label: context.tr('amount'),
                 value: MoneyFormatter.formatVnd(payment.amount),
                 important: true,
-                onTap: () => _copy(context, payment.amount.toStringAsFixed(0), 'Amount'),
+                onTap: () =>
+                    _copy(context, payment.amount.toStringAsFixed(0), 'amount'),
               ),
               _InfoRow(
-                label: 'Transfer content',
+                label: context.tr('transferContent'),
                 value: payment.transferContent,
                 important: true,
-                onTap: () => _copy(context, payment.transferContent, 'Transfer content'),
+                onTap: () =>
+                    _copy(context, payment.transferContent, 'transferContent'),
               ),
               if (payment.accountNumber.isNotEmpty)
                 _InfoRow(
-                  label: 'Account number',
+                  label: context.tr('accountNumber'),
                   value: payment.accountNumber,
-                  onTap: () => _copy(context, payment.accountNumber, 'Account number'),
+                  onTap: () =>
+                      _copy(context, payment.accountNumber, 'accountNumber'),
                 ),
               if (payment.bankName.isNotEmpty)
-                _InfoRow(label: 'Bank', value: payment.bankName),
+                _InfoRow(
+                  label: context.tr('bankName'),
+                  value: payment.bankName,
+                ),
               if (payment.accountName.isNotEmpty)
-                _InfoRow(label: 'Account name', value: payment.accountName),
+                _InfoRow(
+                  label: context.tr('accountName'),
+                  value: payment.accountName,
+                ),
               const SizedBox(height: AppSizes.lg),
-              Container(
-                padding: const EdgeInsets.all(AppSizes.md),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-                  border: Border.all(color: AppColors.warning.withOpacity(0.24)),
-                ),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: isPolling
-                          ? const CircularProgressIndicator(
-                        strokeWidth: 2.4,
-                        color: AppColors.warning,
-                      )
-                          : const Icon(
-                        Icons.schedule_rounded,
-                        color: AppColors.warning,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: AppSizes.md),
-                    const Expanded(
-                      child: Text(
-                        'Waiting for bank confirmation. This page updates automatically.',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.warning,
-                          height: 1.35,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _PaymentStatusCard(status: status, isPolling: isPolling),
               const SizedBox(height: AppSizes.md),
               AppButton(
-                text: 'Cancel checkout',
+                text: context.tr('checkPayment'),
+                icon: Icons.refresh_rounded,
+                isLoading: isCheckingStatus,
+                onPressed: isCheckingStatus ? null : onCheckStatus,
+              ),
+              const SizedBox(height: AppSizes.sm),
+              AppButton(
+                text: context.tr('back'),
                 type: ButtonType.outline,
-                onPressed: onCancel,
+                onPressed: onBack,
               ),
             ],
           ),
@@ -244,15 +247,119 @@ class _QrPayloadFallback extends StatelessWidget {
       );
     }
 
-    return const SizedBox(
+    return SizedBox(
       width: 220,
       height: 220,
       child: Center(
-        child: Icon(
-          Icons.qr_code_2_rounded,
-          size: 96,
-          color: AppColors.textMutedLight,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSizes.md),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.qr_code_2_rounded,
+                size: 58,
+                color: AppColors.textMutedLight,
+              ),
+              const SizedBox(height: AppSizes.sm),
+              Text(
+                context.tr('qrUnavailable'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: AppColors.textSecondaryLight,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                context.tr('qrUnavailableDesc'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: AppColors.textMutedLight,
+                  fontSize: 12,
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _PaymentStatusCard extends StatelessWidget {
+  final String status;
+  final bool isPolling;
+
+  const _PaymentStatusCard({required this.status, required this.isPolling});
+
+  @override
+  Widget build(BuildContext context) {
+    final normalized = status.trim().toLowerCase();
+    final isSuccess =
+        normalized == 'completed' ||
+        normalized == 'success' ||
+        normalized == 'paid';
+    final isFailure =
+        normalized == 'failed' ||
+        normalized == 'cancelled' ||
+        normalized == 'canceled' ||
+        normalized == 'expired';
+    final color = isSuccess
+        ? AppColors.success
+        : (isFailure ? AppColors.danger : AppColors.warning);
+    final icon = isSuccess
+        ? Icons.check_circle_rounded
+        : (isFailure ? Icons.error_rounded : Icons.schedule_rounded);
+    final statusLabel = isSuccess
+        ? context.tr('paymentSuccessful')
+        : (isFailure
+              ? context.tr('paymentFailed')
+              : context.tr('paymentWaiting'));
+
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.md),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+        border: Border.all(color: color.withOpacity(0.24)),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: isPolling && !isSuccess && !isFailure
+                ? CircularProgressIndicator(strokeWidth: 2.4, color: color)
+                : Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: AppSizes.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.tr('paymentStatus'),
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  statusLabel,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: color,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -305,7 +412,9 @@ class _InfoRow extends StatelessWidget {
                 child: Text(
                   label,
                   style: TextStyle(
-                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),

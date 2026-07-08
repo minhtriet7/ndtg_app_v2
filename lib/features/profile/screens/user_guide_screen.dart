@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/widgets/app_card.dart';
 
 class UserGuideScreen extends StatelessWidget {
@@ -10,9 +11,7 @@ class UserGuideScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('User Guide'),
-      ),
+      appBar: AppBar(title: Text(context.tr('userGuide'))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           AppSizes.lg,
@@ -20,61 +19,55 @@ class UserGuideScreen extends StatelessWidget {
           AppSizes.lg,
           132,
         ),
-        children: const [
-          _GuideHero(),
-          SizedBox(height: AppSizes.lg),
-          _GuideSectionTitle(title: 'Recognition Workflow'),
-          SizedBox(height: AppSizes.md),
+        children: [
+          const _GuideHero(),
+          const SizedBox(height: AppSizes.lg),
+          _GuideSectionTitle(title: context.tr('recognitionWorkflow')),
+          const SizedBox(height: AppSizes.md),
           _GuideStep(
             index: '01',
             icon: Icons.camera_alt_rounded,
-            title: 'Capture a clear banknote image',
-            description:
-            'Place the banknote on a flat surface, keep all corners visible, avoid shadows, and make sure the denomination area is not covered.',
+            title: context.tr('guideCaptureTitle'),
+            description: context.tr('guideCaptureDesc'),
           ),
-          SizedBox(height: AppSizes.md),
+          const SizedBox(height: AppSizes.md),
           _GuideStep(
             index: '02',
             icon: Icons.document_scanner_rounded,
-            title: 'Run the multi-agent AI pipeline',
-            description:
-            'Each analysis consumes 1 token. BanknoteAI compares results from computer vision, language reasoning, visual search, and an aggregator.',
+            title: context.tr('guidePipelineTitle'),
+            description: context.tr('guidePipelineDesc'),
           ),
-          SizedBox(height: AppSizes.md),
+          const SizedBox(height: AppSizes.md),
           _GuideStep(
             index: '03',
             icon: Icons.fact_check_rounded,
-            title: 'Review confidence and consensus',
-            description:
-            'Check country, denomination, confidence score, and agent consensus. If the result is uncertain, scan again with better lighting.',
+            title: context.tr('guideConsensusTitle'),
+            description: context.tr('guideConsensusDesc'),
           ),
-          SizedBox(height: AppSizes.xl),
-          _GuideSectionTitle(title: 'Wallet and Tools'),
-          SizedBox(height: AppSizes.md),
+          const SizedBox(height: AppSizes.xl),
+          _GuideSectionTitle(title: context.tr('walletAndTools')),
+          const SizedBox(height: AppSizes.md),
           _GuideStep(
             index: '04',
             icon: Icons.public_rounded,
-            title: 'Browse supported banknotes',
-            description:
-            'Use Directory to check supported Southeast Asian banknotes, denominations, currency codes, reference images, and recognition metadata.',
+            title: context.tr('guideDirectoryTitle'),
+            description: context.tr('guideDirectoryDesc'),
           ),
-          SizedBox(height: AppSizes.md),
+          const SizedBox(height: AppSizes.md),
           _GuideStep(
             index: '05',
             icon: Icons.currency_exchange_rounded,
-            title: 'Convert currencies using VND rates',
-            description:
-            'The converter uses rates stored by the backend. Market sync is handled on the server, so the mobile app never stores provider API keys.',
+            title: context.tr('guideCurrencyTitle'),
+            description: context.tr('guideCurrencyDesc'),
           ),
-          SizedBox(height: AppSizes.md),
+          const SizedBox(height: AppSizes.md),
           _GuideStep(
             index: '06',
             icon: Icons.payments_rounded,
-            title: 'Top up tokens securely',
-            description:
-            'Choose a token package, scan the VietQR/SePay code, and wait for the backend to confirm payment before tokens are added to your account.',
+            title: context.tr('guideTopUpTitle'),
+            description: context.tr('guideTopUpDesc'),
           ),
-          SizedBox(height: AppSizes.xxl),
+          const SizedBox(height: AppSizes.xxl),
         ],
       ),
     );
@@ -102,24 +95,24 @@ class _GuideHero extends StatelessWidget {
             ),
           ],
         ),
-        child: const Column(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.menu_book_rounded, color: Colors.white, size: 42),
-            SizedBox(height: AppSizes.md),
+            const Icon(Icons.menu_book_rounded, color: Colors.white, size: 42),
+            const SizedBox(height: AppSizes.md),
             Text(
-              'BanknoteAI Handbook',
-              style: TextStyle(
+              context.tr('banknoteAiHandbook'),
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 26,
                 fontWeight: FontWeight.w900,
                 letterSpacing: -0.6,
               ),
             ),
-            SizedBox(height: AppSizes.sm),
+            const SizedBox(height: AppSizes.sm),
             Text(
-              'Learn how to get accurate recognition results, manage tokens, and use BanknoteAI tools effectively.',
-              style: TextStyle(
+              context.tr('guideHeroDesc'),
+              style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 14,
                 height: 1.45,

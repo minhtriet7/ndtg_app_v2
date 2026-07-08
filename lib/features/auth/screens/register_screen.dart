@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
@@ -61,17 +62,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!mounted) return;
 
     if (success) {
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        RouteNames.main,
-            (route) => false,
-      );
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(RouteNames.main, (route) => false);
       return;
     }
 
     final auth = context.read<AuthController>();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(auth.error ?? 'Unable to create account.'),
+        content: Text(context.tr(auth.error ?? 'accountCreateFailed')),
         backgroundColor: AppColors.danger,
         behavior: SnackBarBehavior.floating,
       ),
@@ -87,13 +87,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       resizeToAvoidBottomInset: true,
       body: LoadingOverlay(
         isLoading: auth.isLoading,
-        message: 'Creating your account...',
+        message: context.tr('creatingAccount'),
         child: _AuthBackground(
           isDark: isDark,
           child: SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: const EdgeInsets.fromLTRB(
                   AppSizes.lg,
                   AppSizes.md,
@@ -110,16 +111,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       Align(
                         alignment: Alignment.centerLeft,
                         child: IconButton.filledTonal(
-                          onPressed:
-                          auth.isLoading ? null : () => Navigator.of(context).pop(),
+                          onPressed: auth.isLoading
+                              ? null
+                              : () => Navigator.of(context).pop(),
                           icon: const Icon(Icons.arrow_back_rounded),
                         ),
                       ),
                       const SizedBox(height: AppSizes.sm),
-                      const _AuthBrandHeader(
-                        title: 'Create account',
-                        subtitle:
-                        'Start using BanknoteAI multi-agent recognition workspace',
+                      _AuthBrandHeader(
+                        title: context.tr('createAccount'),
+                        subtitle: context.tr('registerTagline'),
                       ),
                       const SizedBox(height: AppSizes.xl),
                       AppCard(
@@ -130,58 +131,78 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               _GoogleButton(
-                                text: 'Continue with Google',
+                                text: context.tr('continueGoogle'),
                                 isLoading: auth.isLoading,
                                 onPressed: _handleGoogleRegister,
                               ),
                               const SizedBox(height: AppSizes.lg),
-                              const _AuthDivider(text: 'or register with email'),
+                              _AuthDivider(
+                                text: context.tr('registerEmailDivider'),
+                              ),
                               const SizedBox(height: AppSizes.lg),
                               AppTextField(
-                                label: 'Full name',
-                                hint: 'Your name',
+                                label: context.tr('fullName'),
+                                hint: context.tr('nameHint'),
                                 controller: _nameController,
                                 prefixIcon: Icons.person_outline_rounded,
-                                validator: (value) => Validators.validateRequired(
-                                  value,
-                                  fieldName: 'Full name',
-                                ),
+                                validator: (value) =>
+                                    (value?.trim().isEmpty ?? true)
+                                    ? context.tr('nameRequired')
+                                    : null,
                               ),
                               const SizedBox(height: AppSizes.md),
                               AppTextField(
-                                label: 'Email address',
-                                hint: 'you@example.com',
+                                label: context.tr('email'),
+                                hint: context.tr('emailHint'),
                                 controller: _emailController,
                                 keyboardType: TextInputType.emailAddress,
                                 prefixIcon: Icons.email_outlined,
-                                validator: Validators.validateEmail,
+                                validator: (value) {
+                                  final text = value?.trim() ?? '';
+                                  if (text.isEmpty) {
+                                    return context.tr('emailRequired');
+                                  }
+                                  if (!RegExp(
+                                    r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+                                  ).hasMatch(text)) {
+                                    return context.tr('emailInvalid');
+                                  }
+                                  return null;
+                                },
                               ),
                               const SizedBox(height: AppSizes.md),
                               AppTextField(
-                                label: 'Password',
-                                hint: 'Create a password',
+                                label: context.tr('password'),
+                                hint: context.tr('createPassword'),
                                 controller: _passwordController,
                                 isPassword: true,
                                 prefixIcon: Icons.lock_outline_rounded,
-                                validator: Validators.validatePassword,
+                                validator: (value) {
+                                  final text = value ?? '';
+                                  if (text.isEmpty) {
+                                    return context.tr('passwordRequired');
+                                  }
+                                  if (text.length < 6) {
+                                    return context.tr('passwordMinLength');
+                                  }
+                                  return null;
+                                },
                               ),
                               const SizedBox(height: AppSizes.md),
                               AppTextField(
-                                label: 'Confirm password',
-                                hint: 'Re-enter your password',
+                                label: context.tr('confirmPassword'),
+                                hint: context.tr('confirmPasswordHint'),
                                 controller: _confirmPasswordController,
                                 isPassword: true,
                                 prefixIcon: Icons.lock_reset_outlined,
                                 validator: (value) {
-                                  final required =
-                                  Validators.validateRequired(
-                                    value,
-                                    fieldName: 'Confirm password',
-                                  );
-
-                                  if (required != null) return required;
+                                  if (value == null || value.isEmpty) {
+                                    return context.tr(
+                                      'confirmPasswordRequired',
+                                    );
+                                  }
                                   if (value != _passwordController.text) {
-                                    return 'Passwords do not match.';
+                                    return context.tr('passwordMismatch');
                                   }
 
                                   return null;
@@ -189,10 +210,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               const SizedBox(height: AppSizes.xl),
                               AppButton(
-                                text: 'Create account',
+                                text: context.tr('createAccount'),
                                 icon: Icons.person_add_alt_1_rounded,
                                 isLoading: auth.isLoading,
-                                onPressed: auth.isLoading ? null : _handleRegister,
+                                onPressed: auth.isLoading
+                                    ? null
+                                    : _handleRegister,
                               ),
                             ],
                           ),
@@ -200,17 +223,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: AppSizes.lg),
                       _SwitchAuthRow(
-                        text: 'Already have an account?',
-                        action: 'Sign in',
+                        text: context.tr('alreadyAccount'),
+                        action: context.tr('signIn'),
                         onTap: auth.isLoading
                             ? null
                             : () {
-                          auth.clearError();
-                          Navigator.of(context).pushNamedAndRemoveUntil(
-                            RouteNames.login,
-                                (route) => false,
-                          );
-                        },
+                                auth.clearError();
+                                Navigator.of(context).pushNamedAndRemoveUntil(
+                                  RouteNames.login,
+                                  (route) => false,
+                                );
+                              },
                       ),
                     ],
                   ),
@@ -228,10 +251,7 @@ class _AuthBackground extends StatelessWidget {
   final bool isDark;
   final Widget child;
 
-  const _AuthBackground({
-    required this.isDark,
-    required this.child,
-  });
+  const _AuthBackground({required this.isDark, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -241,15 +261,7 @@ class _AuthBackground extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: isDark
             ? AppColors.darkGradient
-            : const LinearGradient(
-          colors: [
-            Color(0xFFF8FBFF),
-            Color(0xFFEFFFFB),
-            Color(0xFFF8FBFF),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+            : AppColors.lightBrandGradient,
       ),
       child: Stack(
         children: [
@@ -278,10 +290,7 @@ class _AuthBrandHeader extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const _AuthBrandHeader({
-    required this.title,
-    required this.subtitle,
-  });
+  const _AuthBrandHeader({required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -304,7 +313,7 @@ class _AuthBrandHeader extends StatelessWidget {
             ],
           ),
           child: const Icon(
-            Icons.auto_awesome_rounded,
+            Icons.account_circle_outlined,
             color: Colors.white,
             size: 40,
           ),
@@ -314,7 +323,9 @@ class _AuthBrandHeader extends StatelessWidget {
           title,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color: isDark
+                ? AppColors.textPrimaryDark
+                : AppColors.textPrimaryLight,
             fontSize: 27,
             height: 1.05,
             fontWeight: FontWeight.w900,
@@ -326,7 +337,9 @@ class _AuthBrandHeader extends StatelessWidget {
           subtitle,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+            color: isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondaryLight,
             fontSize: 13,
             height: 1.35,
             fontWeight: FontWeight.w700,
@@ -377,7 +390,9 @@ class _AuthDivider extends StatelessWidget {
           child: Text(
             text,
             style: TextStyle(
-              color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+              color: isDark
+                  ? AppColors.textMutedDark
+                  : AppColors.textMutedLight,
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
@@ -411,14 +426,13 @@ class _SwitchAuthRow extends StatelessWidget {
         Text(
           text,
           style: TextStyle(
-            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+            color: isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondaryLight,
             fontWeight: FontWeight.w600,
           ),
         ),
-        TextButton(
-          onPressed: onTap,
-          child: Text(action),
-        ),
+        TextButton(onPressed: onTap, child: Text(action)),
       ],
     );
   }
@@ -437,13 +451,7 @@ class _AuthGlow extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: color,
-        boxShadow: [
-          BoxShadow(
-            color: color,
-            blurRadius: 90,
-            spreadRadius: 34,
-          ),
-        ],
+        boxShadow: [BoxShadow(color: color, blurRadius: 90, spreadRadius: 34)],
       ),
     );
   }

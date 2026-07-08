@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
-import '../../../core/utils/validators.dart';
+import '../../../core/localization/app_localizations.dart';
+import '../../../core/network/api_exception.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_text_field.dart';
+import '../data/auth_service.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -17,6 +19,8 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _authService = AuthService();
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -24,19 +28,37 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
-  void _showNotConfiguredMessage() {
+  Future<void> _submit() async {
     FocusScope.of(context).unfocus();
 
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Password recovery is not enabled by the backend yet. Please contact your administrator.',
+    setState(() => _isSubmitting = true);
+    try {
+      await _authService.forgotPassword(_emailController.text.trim());
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr('passwordRecoverySuccess')),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
         ),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+      );
+    } catch (error) {
+      if (!mounted) return;
+      final message = error is ApiException
+          ? error.message
+          : context.tr('passwordRecoveryError');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.danger,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
@@ -51,15 +73,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         decoration: BoxDecoration(
           gradient: isDark
               ? AppColors.darkGradient
-              : const LinearGradient(
-            colors: [
-              Color(0xFFF8FBFF),
-              Color(0xFFEFFFFB),
-              Color(0xFFF8FBFF),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+              : AppColors.lightBrandGradient,
         ),
         child: SafeArea(
           child: Center(
@@ -93,7 +107,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         padding: const EdgeInsets.all(AppSizes.xl),
                         decoration: BoxDecoration(
                           gradient: AppColors.tealGradient,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusXxl),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusXxl,
+                          ),
                           boxShadow: [
                             BoxShadow(
                               color: AppColors.primaryTeal.withOpacity(
@@ -104,18 +120,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             ),
                           ],
                         ),
-                        child: const Column(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.lock_reset_rounded,
                               color: Colors.white,
                               size: 42,
                             ),
-                            SizedBox(height: AppSizes.md),
+                            const SizedBox(height: AppSizes.md),
                             Text(
-                              'Recover your account',
-                              style: TextStyle(
+                              context.tr('recoverAccount'),
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 26,
                                 height: 1.1,
@@ -123,10 +139,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 letterSpacing: -0.7,
                               ),
                             ),
-                            SizedBox(height: AppSizes.sm),
+                            const SizedBox(height: AppSizes.sm),
                             Text(
-                              'Enter your email address and BanknoteAI will guide you through the recovery flow when the backend endpoint is enabled.',
-                              style: TextStyle(
+                              context.tr('recoverAccountDesc'),
+                              style: const TextStyle(
                                 color: Colors.white70,
                                 height: 1.45,
                                 fontWeight: FontWeight.w600,
@@ -145,18 +161,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Text(
-                              'Password recovery',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
+                              context.tr('passwordRecovery'),
+                              style: Theme.of(context).textTheme.titleLarge
                                   ?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.4,
-                              ),
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: -0.4,
+                                  ),
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Use the same email address connected to your BanknoteAI account.',
+                              context.tr('passwordRecoveryDesc'),
                               style: TextStyle(
                                 color: isDark
                                     ? AppColors.textSecondaryDark
@@ -167,18 +181,30 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             ),
                             const SizedBox(height: AppSizes.lg),
                             AppTextField(
-                              label: 'Email address',
-                              hint: 'you@example.com',
+                              label: context.tr('email'),
+                              hint: context.tr('emailHint'),
                               controller: _emailController,
                               prefixIcon: Icons.email_outlined,
                               keyboardType: TextInputType.emailAddress,
-                              validator: Validators.validateEmail,
+                              validator: (value) {
+                                final text = value?.trim() ?? '';
+                                if (text.isEmpty) {
+                                  return context.tr('emailRequired');
+                                }
+                                if (!RegExp(
+                                  r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+                                ).hasMatch(text)) {
+                                  return context.tr('emailInvalid');
+                                }
+                                return null;
+                              },
                             ),
                             const SizedBox(height: AppSizes.xl),
                             AppButton(
-                              text: 'Continue',
+                              text: context.tr('continueAction'),
                               icon: Icons.arrow_forward_rounded,
-                              onPressed: _showNotConfiguredMessage,
+                              isLoading: _isSubmitting,
+                              onPressed: _isSubmitting ? null : _submit,
                             ),
                           ],
                         ),
@@ -189,7 +215,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       child: TextButton.icon(
                         onPressed: () => Navigator.of(context).pop(),
                         icon: const Icon(Icons.login_rounded, size: 18),
-                        label: const Text('Back to sign in'),
+                        label: Text(context.tr('backToSignIn')),
                       ),
                     ),
                   ],
